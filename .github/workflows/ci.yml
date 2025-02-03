@@ -31,8 +31,7 @@ jobs:
 
       - name: Install golangci-lint
         run: |
-          sudo apt-get update
-          sudo apt-get install -y golangci-lint
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin
 
       - name: Build
         run: |
@@ -62,10 +61,9 @@ jobs:
         with:
           go-version: "stable"
 
-      - name: Install golangci-lint via apt
+      - name: Install golangci-lint
         run: |
-          sudo apt-get update
-          sudo apt-get install -y golangci-lint
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin
 
       - name: Build
         run: |
