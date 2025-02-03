@@ -48,7 +48,7 @@ func LoadConfig(configPath string) (*Config, error) {
 	}
 
 	validate := validator.New()
-	if err := validate.Struct(config); err != nil {
+	if err := validate.Struct(&config); err != nil {
 		return nil, fmt.Errorf("config validation failed: %w", err)
 	}
 
