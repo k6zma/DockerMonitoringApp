@@ -29,6 +29,11 @@ jobs:
         with:
           go-version: "stable"
 
+      - name: Install golangci-lint
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y golangci-lint
+
       - name: Build
         run: |
           cd backend
@@ -36,10 +41,9 @@ jobs:
           go build -v ./...
 
       - name: Lint
-        uses: golangci/golangci-lint-action@v4
-        with:
-          version: latest
-          args: golangci-lint run ./backend
+        run: |
+          cd backend
+          golangci-lint run
 
       - name: Test
         run: |
@@ -58,6 +62,11 @@ jobs:
         with:
           go-version: "stable"
 
+      - name: Install golangci-lint via apt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y golangci-lint
+
       - name: Build
         run: |
           cd pinger
@@ -65,10 +74,9 @@ jobs:
           go build -v ./...
 
       - name: Lint
-        uses: golangci/golangci-lint-action@v4
-        with:
-          version: latest
-          args: golangci-lint run ./pinger
+        run: |
+          cd pinger
+          golangci-lint run
 
       - name: Test
         run: |
