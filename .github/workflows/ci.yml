@@ -29,6 +29,10 @@ jobs:
         with:
           go-version: "stable"
 
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin
+
       - name: Build
         run: |
           cd backend
@@ -36,10 +40,9 @@ jobs:
           go build -v ./...
 
       - name: Lint
-        uses: golangci/golangci-lint-action@v4
-        with:
-          version: latest
-          args: golangci-lint run ./backend
+        run: |
+          cd backend
+          golangci-lint run
 
       - name: Test
         run: |
@@ -58,6 +61,10 @@ jobs:
         with:
           go-version: "stable"
 
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin
+
       - name: Build
         run: |
           cd pinger
@@ -65,10 +72,9 @@ jobs:
           go build -v ./...
 
       - name: Lint
-        uses: golangci/golangci-lint-action@v4
-        with:
-          version: latest
-          args: golangci-lint run ./pinger
+        run: |
+          cd pinger
+          golangci-lint run
 
       - name: Test
         run: |
