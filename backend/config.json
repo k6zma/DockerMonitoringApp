@@ -1,0 +1,18 @@
+{
+    "server": {
+      "port": 8080
+    },
+    "db": {
+      "host": "localhost",
+      "port": 5432,
+      "user": "user",
+      "password": "password",
+      "database_name": "database"
+    },
+    "logger": {
+        "level": "debug"
+    },
+    "auth_api": {
+      "api_key": "your-api-key"
+    }
+}
