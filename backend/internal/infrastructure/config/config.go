@@ -27,7 +27,7 @@ type DBConfig struct {
 }
 
 type LoggerConfig struct {
-	Level string `json:"level" mapstructure:"level" validate:"required,oneof=debug info warn error dpanic panic fatal"`
+	Level string `mapstructure:"level" validate:"required,oneof=debug info warn error dpanic panic fatal"`
 }
 
 type AuthAPIConfig struct {
