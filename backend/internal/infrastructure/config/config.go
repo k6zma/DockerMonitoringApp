@@ -10,7 +10,6 @@ import (
 type Config struct {
 	Server  *ServerConfig  `mapstructure:"server" validate:"required"`
 	DB      *DBConfig      `mapstructure:"db" validate:"required"`
-	Logger  *LoggerConfig  `json:"logger" mapstructure:"logger" validate:"required"`
 	AuthAPI *AuthAPIConfig `mapstructure:"auth_api" validate:"required"`
 }
 
@@ -24,10 +23,6 @@ type DBConfig struct {
 	User         string `mapstructure:"user" validate:"required"`
 	Password     string `mapstructure:"password" validate:"required"`
 	DataBaseName string `mapstructure:"database_name" validate:"required"`
-}
-
-type LoggerConfig struct {
-	Level string `mapstructure:"level" validate:"required,oneof=debug info warn error dpanic panic fatal"`
 }
 
 type AuthAPIConfig struct {
