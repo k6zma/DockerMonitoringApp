@@ -1,5 +1,5 @@
 CREATE TABLE container_status (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     ip_address INET NOT NULL UNIQUE,
     ping_time NUMERIC,
     last_successful_ping TIMESTAMP,
