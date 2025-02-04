@@ -2,8 +2,7 @@ version: '3'
 
 services:
   db:
-    build:
-      context: ./db
+    image: postgres:latest
     container_name: postgres_db
     env_file:
       - .env
