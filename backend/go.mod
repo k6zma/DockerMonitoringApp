@@ -4,11 +4,11 @@ go 1.23.3
 
 require (
 	github.com/go-playground/validator/v10 v10.24.0
-	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/jackc/pgx/v5 v5.5.4
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/spf13/viper v1.19.0
+	go.uber.org/zap v1.21.0
 )
 
 require (

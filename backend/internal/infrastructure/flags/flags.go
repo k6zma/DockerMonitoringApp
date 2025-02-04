@@ -8,13 +8,15 @@ import (
 )
 
 type AppFlags struct {
-	ConfigFilePath string `validate:"required,file"`
+	ConfigFilePath string `validate:"required"`
 	LoggerLevel    string `validate:"oneof=debug info warn error dpanic panic fatal"`
 }
 
 func ParseFlags() (*AppFlags, error) {
 	configFile := flag.String("config", "config.json", "Path to json configuration file")
-	loggerLevel := flag.String("logger-level", "debug", "Logger level (debug, info, warn, error, dpanic, panic, fatal)")
+	loggerLevel := flag.String("logger_level", "debug", "Logger level (debug, info, warn, error, dpanic, panic, fatal)")
+
+	flag.Parse()
 
 	appFlags := &AppFlags{
 		ConfigFilePath: *configFile,
