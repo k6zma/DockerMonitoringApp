@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	_ "github.com/jackc/pgx/v5/stdlib" // pgx driver
-
 	"github.com/jmoiron/sqlx"
+
 	"github.com/k6zma/DockerMonitoringApp/backend/internal/infrastructure/config"
 )
 
