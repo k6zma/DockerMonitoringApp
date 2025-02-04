@@ -48,7 +48,7 @@ linters-settings:
     lines: 70
     statements: 50
   goimports:
-    local-prefixes: github.com/SurfShadow/surfshadow-server
+    local-prefixes: github.com/k6zma/DockerMonitoringApp/backend
   gocritic:
     enabled-tags:
       - style
