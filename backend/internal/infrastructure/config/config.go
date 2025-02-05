@@ -8,9 +8,10 @@ import (
 )
 
 type Config struct {
-	Server  *ServerConfig  `mapstructure:"server" validate:"required"`
-	DB      *DBConfig      `mapstructure:"db" validate:"required"`
-	AuthAPI *AuthAPIConfig `mapstructure:"auth_api" validate:"required"`
+	Server           *ServerConfig     `mapstructure:"server" validate:"required"`
+	DB               *DBConfig         `mapstructure:"db" validate:"required"`
+	MigrationsConfig *MigrationsConfig `mapstructure:"migrations" validate:"required"`
+	AuthAPI          *AuthAPIConfig    `mapstructure:"auth_api" validate:"required"`
 }
 
 type ServerConfig struct {
@@ -23,6 +24,11 @@ type DBConfig struct {
 	User         string `mapstructure:"user" validate:"required"`
 	Password     string `mapstructure:"password" validate:"required"`
 	DataBaseName string `mapstructure:"database_name" validate:"required"`
+}
+
+type MigrationsConfig struct {
+	Path string `mapstructure:"path" validate:"required,dir"`
+	Type string `mapstructure:"type" validate:"required,oneof=apply drop rollback"`
 }
 
 type AuthAPIConfig struct {
