@@ -9,6 +9,10 @@
       "password": "password",
       "database_name": "database"
     },
+    "migrations": {
+      "path": "migrations",
+      "type": "apply"
+    },
     "auth_api": {
       "api_key": "your-api-key"
     }
