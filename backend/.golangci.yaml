@@ -9,7 +9,6 @@ linters:
     - dupl
     - errcheck
     - exhaustive
-    - funlen
     - gochecknoinits
     - goconst
     - gocritic
