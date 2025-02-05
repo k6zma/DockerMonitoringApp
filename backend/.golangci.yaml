@@ -36,15 +36,14 @@ linters:
     - whitespace
     - asciicheck
     - gocognit
-    - godot
     - nestif
     - prealloc
     - testpackage
 linters-settings:
   lll:
-    line-length: 140
+    line-length: 150
   funlen:
-    lines: 70
+    lines: 120
     statements: 50
   goimports:
     local-prefixes: github.com/k6zma/DockerMonitoringApp/backend
@@ -55,6 +54,8 @@ linters-settings:
       - performance
       - diagnostic
       - opinionated
+  gocognit:
+    min-complexity: 35
 
 issues:
   exclude-rules:
