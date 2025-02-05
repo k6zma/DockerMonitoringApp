@@ -61,7 +61,7 @@ func NewLogger(level string) error {
 			zap.NewAtomicLevelAt(zapLevel),
 		)
 
-		zapLogger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(0))
+		zapLogger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
 
 		LoggerInstance = &logger{
 			zapLogger.Sugar(),
