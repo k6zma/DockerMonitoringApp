@@ -17,7 +17,7 @@ type AppFlags struct {
 func ParseFlags() (*AppFlags, error) {
 	configFile := flag.String("config_path", "config.json", "Path to json configuration file")
 	migrationsPath := flag.String("migrations_path", "migrations", "Path to migrations directory")
-	migrationsType := flag.String("migrations_type", "file", "Type of migrations (apply, drop, rollback)")
+	migrationsType := flag.String("migrations_type", "apply", "Type of migrations (apply, drop, rollback)")
 	loggerLevel := flag.String("logger_level", "debug", "Logger level (debug, info, warn, error, dpanic, panic, fatal)")
 
 	flag.Parse()
