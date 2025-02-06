@@ -24,14 +24,14 @@ type LoggerInterface interface {
 	Fatalf(template string, args ...interface{})
 }
 
-type logger struct {
+type Logger struct {
 	*zap.SugaredLogger
 }
 
-var LoggerInstance *logger
+var LoggerInstance *Logger
 var once sync.Once
 
-func NewLogger(level string) (*logger, error) {
+func NewLogger(level string) (*Logger, error) {
 	var err error
 
 	once.Do(func() {
@@ -63,7 +63,7 @@ func NewLogger(level string) (*logger, error) {
 
 		zapLogger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
 
-		LoggerInstance = &logger{
+		LoggerInstance = &Logger{
 			zapLogger.Sugar(),
 		}
 	})
@@ -88,62 +88,62 @@ func customColorLevelEncoder(level zapcore.Level, enc zapcore.PrimitiveArrayEnco
 	}
 }
 
-func (l *logger) Debug(args ...interface{}) {
+func (l *Logger) Debug(args ...interface{}) {
 	l.SugaredLogger.Debug(args...)
 }
 
-func (l *logger) Debugf(template string, args ...interface{}) {
+func (l *Logger) Debugf(template string, args ...interface{}) {
 	l.SugaredLogger.Debugf(template, args...)
 }
 
-func (l *logger) Info(args ...interface{}) {
+func (l *Logger) Info(args ...interface{}) {
 	l.SugaredLogger.Info(args...)
 }
 
-func (l *logger) Infof(template string, args ...interface{}) {
+func (l *Logger) Infof(template string, args ...interface{}) {
 	l.SugaredLogger.Infof(template, args...)
 }
 
-func (l *logger) Warn(args ...interface{}) {
+func (l *Logger) Warn(args ...interface{}) {
 	l.SugaredLogger.Warn(args...)
 }
 
-func (l *logger) Warnf(template string, args ...interface{}) {
+func (l *Logger) Warnf(template string, args ...interface{}) {
 	l.SugaredLogger.Warnf(template, args...)
 }
 
-func (l *logger) Error(args ...interface{}) {
+func (l *Logger) Error(args ...interface{}) {
 	l.SugaredLogger.Error(args...)
 }
 
-func (l *logger) Errorf(template string, args ...interface{}) {
+func (l *Logger) Errorf(template string, args ...interface{}) {
 	l.SugaredLogger.Errorf(template, args...)
 }
 
-func (l *logger) DPanic(args ...interface{}) {
+func (l *Logger) DPanic(args ...interface{}) {
 	l.SugaredLogger.DPanic(args...)
 }
 
-func (l *logger) DPanicf(template string, args ...interface{}) {
+func (l *Logger) DPanicf(template string, args ...interface{}) {
 	l.SugaredLogger.DPanicf(template, args...)
 }
 
-func (l *logger) Panic(args ...interface{}) {
+func (l *Logger) Panic(args ...interface{}) {
 	l.SugaredLogger.Panic(args...)
 }
 
-func (l *logger) Panicf(template string, args ...interface{}) {
+func (l *Logger) Panicf(template string, args ...interface{}) {
 	l.SugaredLogger.Panicf(template, args...)
 }
 
-func (l *logger) Fatal(args ...interface{}) {
+func (l *Logger) Fatal(args ...interface{}) {
 	l.SugaredLogger.Fatal(args...)
 }
 
-func (l *logger) Fatalf(template string, args ...interface{}) {
+func (l *Logger) Fatalf(template string, args ...interface{}) {
 	l.SugaredLogger.Fatalf(template, args...)
 }
 
-func (l *logger) Sync() error {
+func (l *Logger) Sync() error {
 	return l.SugaredLogger.Sync()
 }

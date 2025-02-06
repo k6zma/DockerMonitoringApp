@@ -12,24 +12,24 @@ import (
 	"github.com/k6zma/DockerMonitoringApp/backend/pkg/utils"
 )
 
-func InitRoutes(cfg *config.Config, errHandlers *handlers.ErrorHandlers, conHandlers *handlers.ContainerStatusHandler, logger utils.LoggerInterface) *mux.Router {
+func InitRoutes(cfg *config.Config, errHandler *handlers.ErrorHandlers, conHandler *handlers.ContainerStatusHandler, logger utils.LoggerInterface) *mux.Router {
 	router := mux.NewRouter()
 
 	router.Use(middlewares.LoggingMiddleware(logger))
 
 	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
-	router.NotFoundHandler = http.HandlerFunc(errHandlers.NotFoundHandler)
-	router.MethodNotAllowedHandler = http.HandlerFunc(errHandlers.MethodNotAllowedHandler)
+	router.NotFoundHandler = http.HandlerFunc(errHandler.NotFoundHandler)
+	router.MethodNotAllowedHandler = http.HandlerFunc(errHandler.MethodNotAllowedHandler)
 
 	apiRouter := router.PathPrefix("/api/v1").Subrouter()
 
 	apiRouter.Use(middlewares.AuthMiddleware(cfg, logger))
 
-	apiRouter.HandleFunc("/container_status", conHandlers.GetFilteredContainerStatuses).Methods("GET")
-	apiRouter.HandleFunc("/container_status", conHandlers.CreateContainerStatus).Methods("POST")
-	apiRouter.HandleFunc("/container_status/{ip}", conHandlers.UpdateContainerStatus).Methods("PATCH")
-	apiRouter.HandleFunc("/container_status/{ip}", conHandlers.DeleteContainerStatus).Methods("DELETE")
+	apiRouter.HandleFunc("/container_status", conHandler.GetFilteredContainerStatuses).Methods("GET")
+	apiRouter.HandleFunc("/container_status", conHandler.CreateContainerStatus).Methods("POST")
+	apiRouter.HandleFunc("/container_status/{ip}", conHandler.UpdateContainerStatus).Methods("PATCH")
+	apiRouter.HandleFunc("/container_status/{ip}", conHandler.DeleteContainerStatus).Methods("DELETE")
 
 	return router
 }
