@@ -1,0 +1,211 @@
+basePath: /api/v1
+definitions:
+  dto.CreateContainerStatusRequest:
+    properties:
+      ip_address:
+        type: string
+      last_successful_ping:
+        type: string
+      ping_time:
+        minimum: 1
+        type: number
+    required:
+    - ip_address
+    - last_successful_ping
+    - ping_time
+    type: object
+  dto.GetContainerStatusResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      ip_address:
+        type: string
+      last_successful_ping:
+        type: string
+      ping_time:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  dto.UpdateContainerStatusRequest:
+    properties:
+      last_successful_ping:
+        type: string
+      ping_time:
+        type: number
+    type: object
+info:
+  contact:
+    email: k6zma@yandex.ru
+    name: Mikhail Gunin
+    url: https://github.com/k6zma
+  description: REST API for monitoring Docker containers.
+  title: Docker Monitoring API
+  version: "1.0"
+paths:
+  /container_status:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of containers with optional filtering by various
+        parameters
+      parameters:
+      - description: Filter by IP
+        in: query
+        name: ip
+        type: string
+      - description: Filter by ID
+        in: query
+        name: id
+        type: integer
+      - description: Filter by minimum ping time
+        in: query
+        name: ping_time_min
+        type: number
+      - description: Filter by maximum ping time
+        in: query
+        name: ping_time_max
+        type: number
+      - description: 'Filter by creation date (greater than or equal to), format:
+          RFC3339'
+        in: query
+        name: created_at_gte
+        type: string
+      - description: 'Filter by creation date (less than or equal to), format: RFC3339'
+        in: query
+        name: created_at_lte
+        type: string
+      - description: 'Filter by last update date (greater than or equal to), format:
+          RFC3339'
+        in: query
+        name: updated_at_gte
+        type: string
+      - description: 'Filter by last update date (less than or equal to), format:
+          RFC3339'
+        in: query
+        name: updated_at_lte
+        type: string
+      - description: Limit the number of returned records
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.GetContainerStatusResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Retrieve a list of containers
+      tags:
+      - Containers
+    post:
+      consumes:
+      - application/json
+      description: Adds a new container to the database
+      parameters:
+      - description: Container data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateContainerStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.GetContainerStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new container
+      tags:
+      - Containers
+  /container_status/{ip}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a container from the database
+      parameters:
+      - description: Container IP address
+        in: path
+        name: ip
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Delete container by IP
+      tags:
+      - Containers
+    patch:
+      consumes:
+      - application/json
+      description: Partially updates a container by its IP address
+      parameters:
+      - description: Container IP address
+        in: path
+        name: ip
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateContainerStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Update container by IP
+      tags:
+      - Containers
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: X-Api-Key
+    type: apiKey
+swagger: "2.0"
