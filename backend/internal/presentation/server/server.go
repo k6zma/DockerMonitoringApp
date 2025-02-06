@@ -18,14 +18,16 @@ import (
 
 type Server struct {
 	httpServer *http.Server
+	logger     utils.LoggerInterface
 }
 
-func NewServer(cfg *config.Config, db *sqlx.DB) *Server {
-	repo := repositories.NewContainerStatusRepositoryImpl(db)
-	useCase := usecases.NewContainerStatusUseCase(repo)
-	handler := handlers.NewContainerStatusHandler(useCase)
+func NewServer(cfg *config.Config, db *sqlx.DB, logger utils.LoggerInterface) *Server {
+	repo := repositories.NewContainerStatusRepositoryImpl(db, logger)
+	useCase := usecases.NewContainerStatusUseCase(repo, logger)
+	containerHandler := handlers.NewContainerStatusHandler(useCase, logger)
+	errHandler := handlers.NewErrorHandlers(logger)
 
-	router := routes.InitRoutes(cfg, handler)
+	router := routes.InitRoutes(cfg, errHandler, containerHandler, logger)
 
 	httpServer := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
@@ -37,12 +39,13 @@ func NewServer(cfg *config.Config, db *sqlx.DB) *Server {
 
 	return &Server{
 		httpServer: httpServer,
+		logger:     logger,
 	}
 }
 
 func (s *Server) Start() error {
 	if err := s.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		utils.LoggerInstance.Infof("SERVER: failed to start HTTP server: %v\n", err)
+		s.logger.Infof("SERVER: failed to start HTTP server: %v\n", err)
 		return fmt.Errorf("failed to start HTTP server: %w", err)
 	}
 
@@ -51,7 +54,7 @@ func (s *Server) Start() error {
 
 func (s *Server) Stop() error {
 	if err := s.httpServer.Close(); err != nil {
-		utils.LoggerInstance.Infof("SERVER: failed to stop HTTP server: %v\n", err)
+		s.logger.Infof("SERVER: failed to stop HTTP server: %v\n", err)
 		return fmt.Errorf("failed to stop HTTP server: %w", err)
 	}
 

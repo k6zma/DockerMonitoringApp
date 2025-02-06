@@ -18,14 +18,16 @@ import (
 )
 
 type ContainerStatusHandler struct {
-	useCase  *usecases.ContainerStatusUseCase
+	useCase  usecases.ContainerStatusUseCaseInterface
 	validate *validator.Validate
+	logger   utils.LoggerInterface
 }
 
-func NewContainerStatusHandler(useCase *usecases.ContainerStatusUseCase) *ContainerStatusHandler {
+func NewContainerStatusHandler(useCase usecases.ContainerStatusUseCaseInterface, logger utils.LoggerInterface) *ContainerStatusHandler {
 	return &ContainerStatusHandler{
 		useCase:  useCase,
 		validate: validator.New(),
+		logger:   logger,
 	}
 }
 
@@ -49,7 +51,7 @@ func NewContainerStatusHandler(useCase *usecases.ContainerStatusUseCase) *Contai
 // @Security ApiKeyAuth
 // @Router /container_status [get].
 func (h *ContainerStatusHandler) GetFilteredContainerStatuses(w http.ResponseWriter, r *http.Request) {
-	utils.LoggerInstance.Debugf("HANDLERS: received GetFilteredContainerStatuses request with query: %s", r.URL.RawQuery)
+	h.logger.Debugf("HANDLERS: received GetFilteredContainerStatuses request with query: %s", r.URL.RawQuery)
 
 	queryParams := r.URL.Query()
 	filter := adto.ContainerStatusFilter{}
@@ -63,7 +65,7 @@ func (h *ContainerStatusHandler) GetFilteredContainerStatuses(w http.ResponseWri
 		if err == nil {
 			filter.ID = &id
 		} else {
-			utils.LoggerInstance.Errorf("HANDLERS: error parsing id param: %v", err)
+			h.logger.Errorf("HANDLERS: error parsing id param: %v", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
@@ -74,7 +76,7 @@ func (h *ContainerStatusHandler) GetFilteredContainerStatuses(w http.ResponseWri
 		if err == nil {
 			filter.PingTimeMin = &pingMin
 		} else {
-			utils.LoggerInstance.Errorf("HANDLERS: error parsing ping_time_min param: %v", err)
+			h.logger.Errorf("HANDLERS: error parsing ping_time_min param: %v", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
@@ -85,7 +87,7 @@ func (h *ContainerStatusHandler) GetFilteredContainerStatuses(w http.ResponseWri
 		if err == nil {
 			filter.PingTimeMax = &pingMax
 		} else {
-			utils.LoggerInstance.Errorf("HANDLERS: error parsing ping_time_max param: %v", err)
+			h.logger.Errorf("HANDLERS: error parsing ping_time_max param: %v", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
@@ -96,7 +98,7 @@ func (h *ContainerStatusHandler) GetFilteredContainerStatuses(w http.ResponseWri
 		if err == nil {
 			filter.CreatedAtGte = &createdAtGte
 		} else {
-			utils.LoggerInstance.Errorf("HANDLERS: error parsing created_at_gte param: %v", err)
+			h.logger.Errorf("HANDLERS: error parsing created_at_gte param: %v", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
@@ -107,7 +109,7 @@ func (h *ContainerStatusHandler) GetFilteredContainerStatuses(w http.ResponseWri
 		if err == nil {
 			filter.CreatedAtLte = &createdAtLte
 		} else {
-			utils.LoggerInstance.Errorf("HANDLERS: error parsing created_at_lte param: %v", err)
+			h.logger.Errorf("HANDLERS: error parsing created_at_lte param: %v", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
@@ -118,7 +120,7 @@ func (h *ContainerStatusHandler) GetFilteredContainerStatuses(w http.ResponseWri
 		if err == nil {
 			filter.UpdatedAtGte = &updatedAtGte
 		} else {
-			utils.LoggerInstance.Errorf("HANDLERS: error parsing updated_at_gte param: %v", err)
+			h.logger.Errorf("HANDLERS: error parsing updated_at_gte param: %v", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
@@ -129,7 +131,7 @@ func (h *ContainerStatusHandler) GetFilteredContainerStatuses(w http.ResponseWri
 		if err == nil {
 			filter.UpdatedAtLte = &updatedAtLte
 		} else {
-			utils.LoggerInstance.Errorf("HANDLERS: error parsing updated_at_lte param: %v", err)
+			h.logger.Errorf("HANDLERS: error parsing updated_at_lte param: %v", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
@@ -140,7 +142,7 @@ func (h *ContainerStatusHandler) GetFilteredContainerStatuses(w http.ResponseWri
 		if err == nil {
 			filter.Limit = &limit
 		} else {
-			utils.LoggerInstance.Errorf("HANDLERS: error parsing limit param: %v", err)
+			h.logger.Errorf("HANDLERS: error parsing limit param: %v", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
@@ -148,18 +150,18 @@ func (h *ContainerStatusHandler) GetFilteredContainerStatuses(w http.ResponseWri
 
 	statuses, err := h.useCase.FindContainerStatuses(&filter)
 	if err != nil {
-		utils.LoggerInstance.Errorf("HANDLERS: getFilteredContainerStatuses error: %v", err)
+		h.logger.Errorf("HANDLERS: getFilteredContainerStatuses error: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	utils.LoggerInstance.Debugf("HANDLERS: found %d container statuses", len(statuses))
+	h.logger.Debugf("HANDLERS: found %d container statuses", len(statuses))
 	response := mapper.MapAppDTOsToResponse(statuses)
 
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		utils.LoggerInstance.Errorf("HANDLERS: error encoding response: %v", err)
+		h.logger.Errorf("HANDLERS: error encoding response: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -178,17 +180,17 @@ func (h *ContainerStatusHandler) GetFilteredContainerStatuses(w http.ResponseWri
 // @Security ApiKeyAuth
 // @Router /container_status [post].
 func (h *ContainerStatusHandler) CreateContainerStatus(w http.ResponseWriter, r *http.Request) {
-	utils.LoggerInstance.Debugf("HANDLERS: received CreateContainerStatus request")
+	h.logger.Debugf("HANDLERS: received CreateContainerStatus request")
 
 	var req pdto.CreateContainerStatusRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.LoggerInstance.Errorf("HANDLERS: createContainerStatus decode error: %v", err)
+		h.logger.Errorf("HANDLERS: createContainerStatus decode error: %v", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	if err := h.validate.Struct(req); err != nil {
-		utils.LoggerInstance.Errorf("HANDLERS: createContainerStatus validation error: %v", err)
+		h.logger.Errorf("HANDLERS: createContainerStatus validation error: %v", err)
 		http.Error(w, "Validation error: "+err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -197,12 +199,12 @@ func (h *ContainerStatusHandler) CreateContainerStatus(w http.ResponseWriter, r 
 
 	createdStatus, err := h.useCase.CreateContainerStatus(&appDTO)
 	if err != nil {
-		utils.LoggerInstance.Errorf("HANDLERS: createContainerStatus error: %v", err)
+		h.logger.Errorf("HANDLERS: createContainerStatus error: %v", err)
 		http.Error(w, "Failed to create container status", http.StatusInternalServerError)
 		return
 	}
 
-	utils.LoggerInstance.Debugf("HANDLERS: container status created with ID: %d", createdStatus.ID)
+	h.logger.Debugf("HANDLERS: container status created with ID: %d", createdStatus.ID)
 
 	response := mapper.MapAppDTOToResponse(*createdStatus)
 
@@ -211,7 +213,7 @@ func (h *ContainerStatusHandler) CreateContainerStatus(w http.ResponseWriter, r 
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		utils.LoggerInstance.Errorf("HANDLERS: error encoding response: %v", err)
+		h.logger.Errorf("HANDLERS: error encoding response: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -234,18 +236,18 @@ func (h *ContainerStatusHandler) UpdateContainerStatus(w http.ResponseWriter, r 
 	vars := mux.Vars(r)
 	ip := vars["ip"]
 
-	utils.LoggerInstance.Debugf("HANDLERS: received UpdateContainerStatus request for IP: %s", ip)
+	h.logger.Debugf("HANDLERS: received UpdateContainerStatus request for IP: %s", ip)
 
 	var req pdto.UpdateContainerStatusRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.LoggerInstance.Errorf("HANDLERS: updateContainerStatus decode error for IP %s: %v", ip, err)
+		h.logger.Errorf("HANDLERS: updateContainerStatus decode error for IP %s: %v", ip, err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 
 		return
 	}
 
 	if req.PingTime == 0 && req.LastSuccessfulPing.IsZero() {
-		utils.LoggerInstance.Errorf("HANDLERS: updateContainerStatus validation error for IP %s: No fields provided", ip)
+		h.logger.Errorf("HANDLERS: updateContainerStatus validation error for IP %s: No fields provided", ip)
 		http.Error(w, "At least one field must be provided", http.StatusBadRequest)
 
 		return
@@ -255,13 +257,13 @@ func (h *ContainerStatusHandler) UpdateContainerStatus(w http.ResponseWriter, r 
 
 	err := h.useCase.UpdateContainerStatus(ip, &appDTO)
 	if err != nil {
-		utils.LoggerInstance.Errorf("HANDLERS: failed to update container status for IP %s: %v", ip, err)
+		h.logger.Errorf("HANDLERS: failed to update container status for IP %s: %v", ip, err)
 		http.Error(w, "Failed to update container status", http.StatusInternalServerError)
 
 		return
 	}
 
-	utils.LoggerInstance.Debugf("HANDLERS: successfully updated container status for IP: %s", ip)
+	h.logger.Debugf("HANDLERS: successfully updated container status for IP: %s", ip)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -281,21 +283,21 @@ func (h *ContainerStatusHandler) DeleteContainerStatus(w http.ResponseWriter, r 
 	vars := mux.Vars(r)
 	ip := vars["ip"]
 
-	utils.LoggerInstance.Debugf("HANDLERS: received DeleteContainerStatus request for IP: %s", ip)
+	h.logger.Debugf("HANDLERS: received DeleteContainerStatus request for IP: %s", ip)
 
 	err := h.useCase.DeleteContainerStatusByIP(ip)
 	if err != nil {
 		if err.Error() == fmt.Sprintf("container status with IP %s not found", ip) {
-			utils.LoggerInstance.Warnf("HANDLERS: container status with IP %s not found", ip)
+			h.logger.Warnf("HANDLERS: container status with IP %s not found", ip)
 			http.Error(w, "Container not found", http.StatusNotFound)
 			return
 		}
 
-		utils.LoggerInstance.Errorf("HANDLERS: failed to delete container status for IP %s: %v", ip, err)
+		h.logger.Errorf("HANDLERS: failed to delete container status for IP %s: %v", ip, err)
 		http.Error(w, "Failed to delete container status", http.StatusInternalServerError)
 		return
 	}
 
-	utils.LoggerInstance.Debugf("HANDLERS: successfully deleted container status for IP: %s", ip)
+	h.logger.Debugf("HANDLERS: successfully deleted container status for IP: %s", ip)
 	w.WriteHeader(http.StatusNoContent)
 }

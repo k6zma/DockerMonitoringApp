@@ -31,7 +31,7 @@ func main() {
 		panic(err)
 	}
 
-	err = utils.NewLogger(appFlags.LoggerLevel)
+	logger, err := utils.NewLogger(appFlags.LoggerLevel)
 	if err != nil {
 		panic(err)
 	}
@@ -62,13 +62,15 @@ func main() {
 	utils.LoggerInstance.Info("ENTRY POINT: database connected successfully")
 
 	utils.LoggerInstance.Infof("ENTRY POINT: applying migrations from \"%s\" folder", cfg.MigrationsConfig.Path)
+
+	mig := migrations.NewMigrate(database, cfg.MigrationsConfig.Path, logger)
 	switch cfg.MigrationsConfig.Type {
 	case "apply":
-		err = migrations.ApplyMigrations(database, cfg.MigrationsConfig.Path)
+		err = mig.ApplyMigrations()
 	case "drop":
-		err = migrations.DropMigrations(database, cfg.MigrationsConfig.Path)
+		err = mig.DropMigrations()
 	case "rollback":
-		err = migrations.RollbackMigrations(database, cfg.MigrationsConfig.Path)
+		err = mig.RollbackMigrations()
 	default:
 		utils.LoggerInstance.Fatalf("ENTRY POINT: unknown migrations type: %s", cfg.MigrationsConfig.Path)
 	}
@@ -79,7 +81,7 @@ func main() {
 	utils.LoggerInstance.Info("ENTRY POINT: migrations applied successfully")
 
 	utils.LoggerInstance.Infof("ENTRY POINT: starting server on port \"localhost:%d\"", cfg.Server.Port)
-	serv := server.NewServer(cfg, database)
+	serv := server.NewServer(cfg, database, logger)
 	go func() {
 		if err := serv.Start(); err != nil {
 			utils.LoggerInstance.Fatalf("ENTRY POINT: failed to start server: %v", err)

@@ -7,7 +7,6 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/k6zma/DockerMonitoringApp/backend/internal/infrastructure/config"
-	"github.com/k6zma/DockerMonitoringApp/backend/pkg/utils"
 )
 
 func NewPsqlDB(cfg *config.DBConfig) (*sqlx.DB, error) {
@@ -21,7 +20,6 @@ func NewPsqlDB(cfg *config.DBConfig) (*sqlx.DB, error) {
 
 	db, err := sqlx.Connect("pgx", dataSourceName)
 	if err != nil {
-		utils.LoggerInstance.Errorf("DB: unable to connect to database: %v", err)
 		return nil, fmt.Errorf("unable to connect to database: %w", err)
 	}
 

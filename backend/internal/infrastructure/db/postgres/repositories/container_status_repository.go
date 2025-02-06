@@ -13,17 +13,19 @@ import (
 )
 
 type ContainerStatusRepositoryImpl struct {
-	db *sqlx.DB
+	db     *sqlx.DB
+	logger utils.LoggerInterface
 }
 
-func NewContainerStatusRepositoryImpl(db *sqlx.DB) appRepo.ContainerStatusRepository {
+func NewContainerStatusRepositoryImpl(db *sqlx.DB, logger utils.LoggerInterface) appRepo.ContainerStatusRepository {
 	return &ContainerStatusRepositoryImpl{
-		db: db,
+		db:     db,
+		logger: logger,
 	}
 }
 
 func (r *ContainerStatusRepositoryImpl) Find(filter *dto.ContainerStatusFilter) ([]*domain.ContainerStatus, error) {
-	utils.LoggerInstance.Debugf("REPOSITORIES: executing Find with filter: %+v", *filter)
+	r.logger.Debugf("REPOSITORIES: executing Find with filter: %+v", *filter)
 
 	query := `
 		SELECT id, ip_address, ping_time, last_successful_ping, created_at, updated_at
@@ -91,11 +93,11 @@ func (r *ContainerStatusRepositoryImpl) Find(filter *dto.ContainerStatusFilter) 
 		args = append(args, *filter.Limit)
 	}
 
-	utils.LoggerInstance.Debugf("REPOSITORIES: final Query: %s, Args: %+v", query, args)
+	r.logger.Debugf("REPOSITORIES: final Query: %s, Args: %+v", query, args)
 
 	rows, err := r.db.Queryx(query, args...)
 	if err != nil {
-		utils.LoggerInstance.Errorf("REPOSITORIES: failed to execute query: %v\n", err)
+		r.logger.Errorf("REPOSITORIES: failed to execute query: %v\n", err)
 		return nil, fmt.Errorf("database query error: %w", err)
 	}
 
@@ -106,7 +108,7 @@ func (r *ContainerStatusRepositoryImpl) Find(filter *dto.ContainerStatusFilter) 
 
 		err := rows.Scan(&status.ID, &status.IPAddress, &pingTime, &status.LastSuccessfulPing, &status.CreatedAt, &status.UpdatedAt)
 		if err != nil {
-			utils.LoggerInstance.Errorf("REPOSITORIES: failed to scan row: %v\n", err)
+			r.logger.Errorf("REPOSITORIES: failed to scan row: %v\n", err)
 			return nil, fmt.Errorf("database scan error: %w", err)
 		}
 
@@ -114,13 +116,13 @@ func (r *ContainerStatusRepositoryImpl) Find(filter *dto.ContainerStatusFilter) 
 		results = append(results, &status)
 	}
 
-	utils.LoggerInstance.Debugf("REPOSITORIES: query executed successfully, found %d records", len(results))
+	r.logger.Debugf("REPOSITORIES: query executed successfully, found %d records", len(results))
 
 	return results, nil
 }
 
 func (r *ContainerStatusRepositoryImpl) Create(status *domain.ContainerStatus) error {
-	utils.LoggerInstance.Debugf("REPOSITORIES: creating container status record: %+v", status)
+	r.logger.Debugf("REPOSITORIES: creating container status record: %+v", status)
 
 	query := `
 		INSERT INTO container_status (ip_address, ping_time, last_successful_ping, created_at, updated_at)
@@ -137,17 +139,17 @@ func (r *ContainerStatusRepositoryImpl) Create(status *domain.ContainerStatus) e
 		status.UpdatedAt,
 	).Scan(&status.ID)
 	if err != nil {
-		utils.LoggerInstance.Errorf("REPOSITORIES: failed to create container status: %v", err)
+		r.logger.Errorf("REPOSITORIES: failed to create container status: %v", err)
 		return fmt.Errorf("failed to create container status: %w", err)
 	}
 
-	utils.LoggerInstance.Debugf("REPOSITORIES: container status created with ID: %d", status.ID)
+	r.logger.Debugf("REPOSITORIES: container status created with ID: %d", status.ID)
 
 	return nil
 }
 
 func (r *ContainerStatusRepositoryImpl) Update(status *domain.ContainerStatus) error {
-	utils.LoggerInstance.Debugf("REPOSITORIES: updating container status record for IP: %s", status.IPAddress)
+	r.logger.Debugf("REPOSITORIES: updating container status record for IP: %s", status.IPAddress)
 
 	query := `
 		UPDATE container_status
@@ -163,17 +165,17 @@ func (r *ContainerStatusRepositoryImpl) Update(status *domain.ContainerStatus) e
 		status.IPAddress,
 	)
 	if err != nil {
-		utils.LoggerInstance.Errorf("REPOSITORIES: failed to update container status for IP %s: %v", status.IPAddress, err)
+		r.logger.Errorf("REPOSITORIES: failed to update container status for IP %s: %v", status.IPAddress, err)
 		return fmt.Errorf("failed to update container status: %w", err)
 	}
 
-	utils.LoggerInstance.Debugf("REPOSITORIES: container status for IP %s updated successfully", status.IPAddress)
+	r.logger.Debugf("REPOSITORIES: container status for IP %s updated successfully", status.IPAddress)
 
 	return nil
 }
 
 func (r *ContainerStatusRepositoryImpl) DeleteByIP(ipAddress string) error {
-	utils.LoggerInstance.Debugf("REPOSITORIES: deleting container status record for IP: %s", ipAddress)
+	r.logger.Debugf("REPOSITORIES: deleting container status record for IP: %s", ipAddress)
 
 	query := `
 		DELETE FROM container_status
@@ -182,11 +184,11 @@ func (r *ContainerStatusRepositoryImpl) DeleteByIP(ipAddress string) error {
 
 	_, err := r.db.Exec(query, ipAddress)
 	if err != nil {
-		utils.LoggerInstance.Errorf("REPOSITORIES: failed to delete container status for IP %s: %v", ipAddress, err)
+		r.logger.Errorf("REPOSITORIES: failed to delete container status for IP %s: %v", ipAddress, err)
 		return fmt.Errorf("failed to delete container status: %w", err)
 	}
 
-	utils.LoggerInstance.Debugf("REPOSITORIES: container status for IP %s deleted successfully", ipAddress)
+	r.logger.Debugf("REPOSITORIES: container status for IP %s deleted successfully", ipAddress)
 
 	return nil
 }

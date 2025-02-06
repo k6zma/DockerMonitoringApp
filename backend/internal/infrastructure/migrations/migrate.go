@@ -12,100 +12,114 @@ import (
 	"github.com/k6zma/DockerMonitoringApp/backend/pkg/utils"
 )
 
-func ApplyMigrations(db *sqlx.DB, migrationsPath string) error {
-	utils.LoggerInstance.Debugf("MIGRATIONS: starting ApplyMigrations with path: %s", migrationsPath)
+type Migrations struct {
+	db             *sqlx.DB
+	migrationsPath string
+	logger         utils.LoggerInterface
+}
 
-	driver, err := pgx.WithInstance(db.DB, &pgx.Config{})
+func NewMigrate(db *sqlx.DB, migrationsPath string, logger utils.LoggerInterface) *Migrations {
+	return &Migrations{
+		db:             db,
+		migrationsPath: migrationsPath,
+		logger:         logger,
+	}
+}
+
+func (m *Migrations) ApplyMigrations() error {
+	m.logger.Debugf("MIGRATIONS: starting ApplyMigrations with path: %s", m.migrationsPath)
+
+	driver, err := pgx.WithInstance(m.db.DB, &pgx.Config{})
 	if err != nil {
-		utils.LoggerInstance.Errorf("MIGRATIONS: failed to create migration driver: %v", err)
+		m.logger.Errorf("MIGRATIONS: failed to create migration driver: %v", err)
 		return fmt.Errorf("failed to create migration driver: %w", err)
 	}
-	utils.LoggerInstance.Debug("MIGRATIONS: migration driver created successfully")
+	m.logger.Debug("MIGRATIONS: migration driver created successfully")
 
-	m, err := migrate.NewWithDatabaseInstance(
-		"file://"+migrationsPath,
+	mig, err := migrate.NewWithDatabaseInstance(
+		"file://"+m.migrationsPath,
 		"postgres",
 		driver,
 	)
 	if err != nil {
-		utils.LoggerInstance.Errorf("MIGRATIONS: failed to create migrate instance: %v", err)
+		m.logger.Errorf("MIGRATIONS: failed to create migrate instance: %v", err)
 		return fmt.Errorf("failed to create migrate instance: %w", err)
 	}
 
-	utils.LoggerInstance.Debug("MIGRATIONS: migrate instance created successfully")
+	m.logger.Debug("MIGRATIONS: migrate instance created successfully")
 
-	if err = m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		utils.LoggerInstance.Errorf("MIGRATIONS: failed to apply migrations: %v", err)
+	if err = mig.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		m.logger.Errorf("MIGRATIONS: failed to apply migrations: %v", err)
 		return fmt.Errorf("failed to apply migrations: %w", err)
 	}
 
-	utils.LoggerInstance.Debug("MIGRATIONS: applied migrations successfully or no change found")
+	m.logger.Debug("MIGRATIONS: applied migrations successfully or no change found")
 
 	return nil
 }
 
-func RollbackMigrations(db *sqlx.DB, migrationsPath string) error {
-	utils.LoggerInstance.Debugf("MIGRATIONS: starting RollbackMigrations with path: %s", migrationsPath)
+func (m *Migrations) RollbackMigrations() error {
+	m.logger.Debugf("MIGRATIONS: starting RollbackMigrations with path: %s", m.migrationsPath)
 
-	driver, err := pgx.WithInstance(db.DB, &pgx.Config{})
+	driver, err := pgx.WithInstance(m.db.DB, &pgx.Config{})
 	if err != nil {
-		utils.LoggerInstance.Errorf("MIGRATIONS: failed to create migration driver: %v", err)
+		m.logger.Errorf("MIGRATIONS: failed to create migration driver: %v", err)
 		return fmt.Errorf("failed to create migration driver: %w", err)
 	}
 
-	utils.LoggerInstance.Debug("MIGRATIONS: migration driver created successfully")
+	m.logger.Debug("MIGRATIONS: migration driver created successfully")
 
-	m, err := migrate.NewWithDatabaseInstance(
-		"file://"+migrationsPath,
+	mig, err := migrate.NewWithDatabaseInstance(
+		"file://"+m.migrationsPath,
 		"postgres",
 		driver,
 	)
 	if err != nil {
-		utils.LoggerInstance.Errorf("MIGRATIONS: failed to create migrate instance: %v", err)
+		m.logger.Errorf("MIGRATIONS: failed to create migrate instance: %v", err)
 		return fmt.Errorf("failed to create migrate instance: %w", err)
 	}
 
-	utils.LoggerInstance.Debug("MIGRATIONS: migrate instance created successfully")
+	m.logger.Debug("MIGRATIONS: migrate instance created successfully")
 
-	if err = m.Steps(-1); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		utils.LoggerInstance.Errorf("MIGRATIONS: failed to rollback migration: %v", err)
+	if err = mig.Steps(-1); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		m.logger.Errorf("MIGRATIONS: failed to rollback migration: %v", err)
 		return fmt.Errorf("failed to rollback migration: %w", err)
 	}
 
-	utils.LoggerInstance.Debug("MIGRATIONS: rolled back migration successfully or no change found")
+	m.logger.Debug("MIGRATIONS: rolled back migration successfully or no change found")
 
 	return nil
 }
 
-func DropMigrations(db *sqlx.DB, migrationsPath string) error {
-	utils.LoggerInstance.Debugf("MIGRATIONS: starting DropMigrations with path: %s", migrationsPath)
+func (m *Migrations) DropMigrations() error {
+	m.logger.Debugf("MIGRATIONS: starting DropMigrations with path: %s", m.migrationsPath)
 
-	driver, err := pgx.WithInstance(db.DB, &pgx.Config{})
+	driver, err := pgx.WithInstance(m.db.DB, &pgx.Config{})
 	if err != nil {
-		utils.LoggerInstance.Errorf("MIGRATIONS: failed to create migration driver: %v", err)
+		m.logger.Errorf("MIGRATIONS: failed to create migration driver: %v", err)
 		return fmt.Errorf("failed to create migration driver: %w", err)
 	}
 
-	utils.LoggerInstance.Debug("MIGRATIONS: migration driver created successfully")
+	m.logger.Debug("MIGRATIONS: migration driver created successfully")
 
-	m, err := migrate.NewWithDatabaseInstance(
-		"file://"+migrationsPath,
+	mig, err := migrate.NewWithDatabaseInstance(
+		"file://"+m.migrationsPath,
 		"postgres",
 		driver,
 	)
 	if err != nil {
-		utils.LoggerInstance.Errorf("MIGRATIONS: failed to create migrate instance: %v", err)
+		m.logger.Errorf("MIGRATIONS: failed to create migrate instance: %v", err)
 		return fmt.Errorf("failed to create migrate instance: %w", err)
 	}
 
-	utils.LoggerInstance.Debug("MIGRATIONS: migrate instance created successfully")
+	m.logger.Debug("MIGRATIONS: migrate instance created successfully")
 
-	if err = m.Drop(); err != nil {
-		utils.LoggerInstance.Errorf("MIGRATIONS: failed to drop all migrations: %v", err)
+	if err = mig.Drop(); err != nil {
+		m.logger.Errorf("MIGRATIONS: failed to drop all migrations: %v", err)
 		return fmt.Errorf("failed to drop all migrations: %w", err)
 	}
 
-	utils.LoggerInstance.Debug("MIGRATIONS: dropped all migrations successfully")
+	m.logger.Debug("MIGRATIONS: dropped all migrations successfully")
 
 	return nil
 }
