@@ -31,7 +31,7 @@ type logger struct {
 var LoggerInstance *logger
 var once sync.Once
 
-func NewLogger(level string) error {
+func NewLogger(level string) (*logger, error) {
 	var err error
 
 	once.Do(func() {
@@ -68,7 +68,7 @@ func NewLogger(level string) error {
 		}
 	})
 
-	return err
+	return LoggerInstance, err
 }
 
 func customColorLevelEncoder(level zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
