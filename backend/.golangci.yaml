@@ -41,7 +41,7 @@ linters:
     - testpackage
 linters-settings:
   lll:
-    line-length: 150
+    line-length: 160
   funlen:
     lines: 120
     statements: 50
