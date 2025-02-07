@@ -1,0 +1,10 @@
+{
+    "ping_interval": "1s",
+    "docker": {
+        "socket_path": "/var/run/docker.sock"
+    },
+    "backend": {
+      "url": "http://backend_service:8080",
+      "api_key": "your-api-key"
+    }
+  }
