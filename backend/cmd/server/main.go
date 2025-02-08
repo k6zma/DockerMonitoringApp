@@ -15,7 +15,7 @@ import (
 )
 
 // @title Docker Monitoring API
-// @version 1.0
+// @version 1.1
 // @description REST API for monitoring Docker containers.
 // @contact.name Mikhail Gunin
 // @contact.url https://github.com/k6zma
