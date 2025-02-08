@@ -287,6 +287,8 @@ func TestCreateContainerStatus_SuccessfullyCreatesContainer(t *testing.T) {
 
 	requestBody := pdto.CreateContainerStatusRequest{
 		IPAddress:          ipAddress,
+		Name:               "test_container",
+		Status:             "exited",
 		PingTime:           pingTime,
 		LastSuccessfulPing: timeData,
 	}
@@ -294,6 +296,8 @@ func TestCreateContainerStatus_SuccessfullyCreatesContainer(t *testing.T) {
 
 	mockUseCase.On("CreateContainerStatus", mock.Anything).Return(&adto.ContainerStatusDTO{
 		IPAddress:          ipAddress,
+		Name:               "test_container",
+		Status:             "exited",
 		PingTime:           pingTime,
 		LastSuccessfulPing: timeData,
 	}, nil)
@@ -306,7 +310,6 @@ func TestCreateContainerStatus_SuccessfullyCreatesContainer(t *testing.T) {
 	handler.CreateContainerStatus(rec, req)
 
 	assert.Equal(t, http.StatusCreated, rec.Code, "Response Body: %s", rec.Body.String())
-	assert.Equal(t, http.StatusCreated, rec.Code)
 	mockUseCase.AssertExpectations(t)
 	mockLogger.AssertExpectations(t)
 }
@@ -361,12 +364,15 @@ func TestCreateContainerStatus_ErrorFromUseCase_ReturnsInternalServerError(t *te
 
 	requestBody := pdto.CreateContainerStatusRequest{
 		IPAddress:          ipAddress,
+		Name:               "test_container",
+		Status:             "exited",
 		PingTime:           pingTime,
 		LastSuccessfulPing: time.Now(),
 	}
 	jsonBody, _ := json.Marshal(requestBody)
 
-	mockUseCase.On("CreateContainerStatus", mock.Anything).Return(nil, fmt.Errorf("database error"))
+	mockUseCase.On("CreateContainerStatus", mock.Anything).
+		Return(nil, fmt.Errorf("database error"))
 	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 
