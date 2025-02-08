@@ -31,20 +31,28 @@ func NewBackendStatusRepo(
 	}
 }
 
-func (r *BackendStatusRepo) UpdateStatus(ctx context.Context, ip string, pingTime float64) error {
+func (r *BackendStatusRepo) UpdateStatus(ctx context.Context, ip string, pingTime int64, name, status string) error {
 	url := fmt.Sprintf("%s/api/v1/container_status/%s", r.baseURL, ip)
+	r.logger.Debugf("Sending PATCH request to %s with data: name=%s, status=%s, ping_time=%d", url, name, status, pingTime)
+
 	return r.sendRequest(ctx, "PATCH", url, map[string]interface{}{
 		"ping_time":            pingTime,
 		"last_successful_ping": time.Now().Format(time.RFC3339),
+		"name":                 name,
+		"status":               status,
 	})
 }
 
-func (r *BackendStatusRepo) CreateStatus(ctx context.Context, ip string, pingTime float64) error {
+func (r *BackendStatusRepo) CreateStatus(ctx context.Context, ip string, pingTime int64, name, status string) error {
 	url := fmt.Sprintf("%s/api/v1/container_status", r.baseURL)
+	r.logger.Debugf("Sending POST request to %s with data: name=%s, status=%s, ping_time=%d", url, name, status, pingTime)
+
 	return r.sendRequest(ctx, "POST", url, map[string]interface{}{
 		"ip_address":           ip,
 		"ping_time":            pingTime,
 		"last_successful_ping": time.Now().Format(time.RFC3339),
+		"name":                 name,
+		"status":               status,
 	})
 }
 
