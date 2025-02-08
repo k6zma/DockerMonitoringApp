@@ -23,7 +23,10 @@ type ContainerStatusHandler struct {
 	logger   utils.LoggerInterface
 }
 
-func NewContainerStatusHandler(useCase usecases.ContainerStatusUseCaseInterface, logger utils.LoggerInterface) *ContainerStatusHandler {
+func NewContainerStatusHandler(
+	useCase usecases.ContainerStatusUseCaseInterface,
+	logger utils.LoggerInterface,
+) *ContainerStatusHandler {
 	return &ContainerStatusHandler{
 		useCase:  useCase,
 		validate: validator.New(),
@@ -39,6 +42,8 @@ func NewContainerStatusHandler(useCase usecases.ContainerStatusUseCaseInterface,
 // @Produce json
 // @Param ip query string false "Filter by IP"
 // @Param id query int false "Filter by ID"
+// @Param name query string false "Filter by name"
+// @Param status query string false "Filter by status"
 // @Param ping_time_min query number false "Filter by minimum ping time"
 // @Param ping_time_max query number false "Filter by maximum ping time"
 // @Param created_at_gte query string false "Filter by creation date (greater than or equal to), format: RFC3339"
@@ -50,8 +55,14 @@ func NewContainerStatusHandler(useCase usecases.ContainerStatusUseCaseInterface,
 // @Failure 500 {string} string "Internal Server Error"
 // @Security ApiKeyAuth
 // @Router /container_status [get].
-func (h *ContainerStatusHandler) GetFilteredContainerStatuses(w http.ResponseWriter, r *http.Request) {
-	h.logger.Debugf("HANDLERS: received GetFilteredContainerStatuses request with query: %s", r.URL.RawQuery)
+func (h *ContainerStatusHandler) GetFilteredContainerStatuses(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	h.logger.Debugf(
+		"HANDLERS: received GetFilteredContainerStatuses request with query: %s",
+		r.URL.RawQuery,
+	)
 
 	queryParams := r.URL.Query()
 	filter := adto.ContainerStatusFilter{}
@@ -69,6 +80,14 @@ func (h *ContainerStatusHandler) GetFilteredContainerStatuses(w http.ResponseWri
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
+	}
+
+	if name := queryParams.Get("name"); name != "" {
+		filter.Name = &name
+	}
+
+	if status := queryParams.Get("status"); status != "" {
+		filter.Status = &status
 	}
 
 	if pingMinStr := queryParams.Get("ping_time_min"); pingMinStr != "" {
@@ -246,8 +265,11 @@ func (h *ContainerStatusHandler) UpdateContainerStatus(w http.ResponseWriter, r 
 		return
 	}
 
-	if req.PingTime == 0 && req.LastSuccessfulPing.IsZero() {
-		h.logger.Errorf("HANDLERS: updateContainerStatus validation error for IP %s: No fields provided", ip)
+	if req.PingTime == 0 && req.LastSuccessfulPing.IsZero() && req.Status == "" {
+		h.logger.Errorf(
+			"HANDLERS: updateContainerStatus validation error for IP %s: No fields provided",
+			ip,
+		)
 		http.Error(w, "At least one field must be provided", http.StatusBadRequest)
 
 		return

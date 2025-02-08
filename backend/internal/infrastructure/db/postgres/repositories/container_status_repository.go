@@ -17,18 +17,23 @@ type ContainerStatusRepositoryImpl struct {
 	logger utils.LoggerInterface
 }
 
-func NewContainerStatusRepositoryImpl(db *sqlx.DB, logger utils.LoggerInterface) appRepo.ContainerStatusRepository {
+func NewContainerStatusRepositoryImpl(
+	db *sqlx.DB,
+	logger utils.LoggerInterface,
+) appRepo.ContainerStatusRepository {
 	return &ContainerStatusRepositoryImpl{
 		db:     db,
 		logger: logger,
 	}
 }
 
-func (r *ContainerStatusRepositoryImpl) Find(filter *dto.ContainerStatusFilter) ([]*domain.ContainerStatus, error) {
+func (r *ContainerStatusRepositoryImpl) Find(
+	filter *dto.ContainerStatusFilter,
+) ([]*domain.ContainerStatus, error) {
 	r.logger.Debugf("REPOSITORIES: executing Find with filter: %+v", *filter)
 
 	query := `
-		SELECT id, ip_address, ping_time, last_successful_ping, created_at, updated_at
+		SELECT id, ip_address, name, status, ping_time, last_successful_ping, created_at, updated_at
 		FROM container_status
 	`
 
@@ -38,13 +43,25 @@ func (r *ContainerStatusRepositoryImpl) Find(filter *dto.ContainerStatusFilter) 
 
 	if filter.IPAddress != nil {
 		conditions = append(conditions, fmt.Sprintf("ip_address = $%d", argCounter))
-		args = append(args, filter.IPAddress)
+		args = append(args, *filter.IPAddress)
 		argCounter++
 	}
 
 	if filter.ID != nil {
 		conditions = append(conditions, fmt.Sprintf("id = $%d", argCounter))
 		args = append(args, filter.ID)
+		argCounter++
+	}
+
+	if filter.Name != nil {
+		conditions = append(conditions, fmt.Sprintf("name = $%d", argCounter))
+		args = append(args, *filter.Name)
+		argCounter++
+	}
+
+	if filter.Status != nil {
+		conditions = append(conditions, fmt.Sprintf("status = $%d", argCounter))
+		args = append(args, *filter.Status)
 		argCounter++
 	}
 
@@ -106,7 +123,16 @@ func (r *ContainerStatusRepositoryImpl) Find(filter *dto.ContainerStatusFilter) 
 		var status domain.ContainerStatus
 		var pingTime float64
 
-		err := rows.Scan(&status.ID, &status.IPAddress, &pingTime, &status.LastSuccessfulPing, &status.CreatedAt, &status.UpdatedAt)
+		err := rows.Scan(
+			&status.ID,
+			&status.IPAddress,
+			&status.Name,
+			&status.Status,
+			&pingTime,
+			&status.LastSuccessfulPing,
+			&status.CreatedAt,
+			&status.UpdatedAt,
+		)
 		if err != nil {
 			r.logger.Errorf("REPOSITORIES: failed to scan row: %v\n", err)
 			return nil, fmt.Errorf("database scan error: %w", err)
@@ -125,14 +151,16 @@ func (r *ContainerStatusRepositoryImpl) Create(status *domain.ContainerStatus) e
 	r.logger.Debugf("REPOSITORIES: creating container status record: %+v", status)
 
 	query := `
-		INSERT INTO container_status (ip_address, ping_time, last_successful_ping, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO container_status (ip_address, name, status, ping_time, last_successful_ping, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id
 	`
 
 	err := r.db.QueryRowx(
 		query,
 		status.IPAddress,
+		status.Name,
+		status.Status,
 		status.PingTime,
 		status.LastSuccessfulPing,
 		status.CreatedAt,
@@ -153,23 +181,32 @@ func (r *ContainerStatusRepositoryImpl) Update(status *domain.ContainerStatus) e
 
 	query := `
 		UPDATE container_status
-		SET ping_time = $1, last_successful_ping = $2, updated_at = $3
-		WHERE ip_address = $4
+		SET name = $1, status = $2, ping_time = $3, last_successful_ping = $4, updated_at = $5
+		WHERE ip_address = $6
 	`
 
 	_, err := r.db.Exec(
 		query,
+		status.Name,
+		status.Status,
 		status.PingTime,
 		status.LastSuccessfulPing,
 		status.UpdatedAt,
 		status.IPAddress,
 	)
 	if err != nil {
-		r.logger.Errorf("REPOSITORIES: failed to update container status for IP %s: %v", status.IPAddress, err)
+		r.logger.Errorf(
+			"REPOSITORIES: failed to update container status for IP %s: %v",
+			status.IPAddress,
+			err,
+		)
 		return fmt.Errorf("failed to update container status: %w", err)
 	}
 
-	r.logger.Debugf("REPOSITORIES: container status for IP %s updated successfully", status.IPAddress)
+	r.logger.Debugf(
+		"REPOSITORIES: container status for IP %s updated successfully",
+		status.IPAddress,
+	)
 
 	return nil
 }
@@ -184,7 +221,11 @@ func (r *ContainerStatusRepositoryImpl) DeleteByIP(ipAddress string) error {
 
 	_, err := r.db.Exec(query, ipAddress)
 	if err != nil {
-		r.logger.Errorf("REPOSITORIES: failed to delete container status for IP %s: %v", ipAddress, err)
+		r.logger.Errorf(
+			"REPOSITORIES: failed to delete container status for IP %s: %v",
+			ipAddress,
+			err,
+		)
 		return fmt.Errorf("failed to delete container status: %w", err)
 	}
 

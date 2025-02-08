@@ -8,10 +8,10 @@ import (
 )
 
 type Config struct {
-	Server           *ServerConfig     `mapstructure:"server" validate:"required"`
-	DB               *DBConfig         `mapstructure:"db" validate:"required"`
+	Server           *ServerConfig     `mapstructure:"server"     validate:"required"`
+	DB               *DBConfig         `mapstructure:"db"         validate:"required"`
 	MigrationsConfig *MigrationsConfig `mapstructure:"migrations" validate:"required"`
-	AuthAPI          *AuthAPIConfig    `mapstructure:"auth_api" validate:"required"`
+	AuthAPI          *AuthAPIConfig    `mapstructure:"auth_api"   validate:"required"`
 }
 
 type ServerConfig struct {
@@ -19,10 +19,10 @@ type ServerConfig struct {
 }
 
 type DBConfig struct {
-	Host         string `mapstructure:"host" validate:"required"`
-	Port         uint16 `mapstructure:"port" validate:"required,gt=0"`
-	User         string `mapstructure:"user" validate:"required"`
-	Password     string `mapstructure:"password" validate:"required"`
+	Host         string `mapstructure:"host"          validate:"required"`
+	Port         uint16 `mapstructure:"port"          validate:"required,gt=0"`
+	User         string `mapstructure:"user"          validate:"required"`
+	Password     string `mapstructure:"password"      validate:"required"`
 	DataBaseName string `mapstructure:"database_name" validate:"required"`
 }
 
