@@ -22,14 +22,19 @@ type ContainerStatusUseCase struct {
 	logger utils.LoggerInterface
 }
 
-func NewContainerStatusUseCase(repo repositories.ContainerStatusRepository, logger utils.LoggerInterface) *ContainerStatusUseCase {
+func NewContainerStatusUseCase(
+	repo repositories.ContainerStatusRepository,
+	logger utils.LoggerInterface,
+) *ContainerStatusUseCase {
 	return &ContainerStatusUseCase{
 		repo:   repo,
 		logger: logger,
 	}
 }
 
-func (uc *ContainerStatusUseCase) FindContainerStatuses(filter *dto.ContainerStatusFilter) ([]*dto.ContainerStatusDTO, error) {
+func (uc *ContainerStatusUseCase) FindContainerStatuses(
+	filter *dto.ContainerStatusFilter,
+) ([]*dto.ContainerStatusDTO, error) {
 	uc.logger.Debugf("USECASES: finding container statuses with filter: %+v", filter)
 
 	statuses, err := uc.repo.Find(filter)
@@ -48,11 +53,15 @@ func (uc *ContainerStatusUseCase) FindContainerStatuses(filter *dto.ContainerSta
 	return dtos, nil
 }
 
-func (uc *ContainerStatusUseCase) CreateContainerStatus(statusDTO *dto.ContainerStatusDTO) (*dto.ContainerStatusDTO, error) {
+func (uc *ContainerStatusUseCase) CreateContainerStatus(
+	statusDTO *dto.ContainerStatusDTO,
+) (*dto.ContainerStatusDTO, error) {
 	uc.logger.Debugf("USECASES: creating container status: %+v", statusDTO)
 
 	newStatus := &domain.ContainerStatus{
+		Name:               statusDTO.Name,
 		IPAddress:          statusDTO.IPAddress,
+		Status:             statusDTO.Status,
 		PingTime:           statusDTO.PingTime,
 		LastSuccessfulPing: statusDTO.LastSuccessfulPing,
 		CreatedAt:          time.Now(),
@@ -70,7 +79,10 @@ func (uc *ContainerStatusUseCase) CreateContainerStatus(statusDTO *dto.Container
 	return mapDomainToDTO(newStatus), nil
 }
 
-func (uc *ContainerStatusUseCase) UpdateContainerStatus(ip string, statusDTO *dto.ContainerStatusDTO) error {
+func (uc *ContainerStatusUseCase) UpdateContainerStatus(
+	ip string,
+	statusDTO *dto.ContainerStatusDTO,
+) error {
 	uc.logger.Debugf("USECASES: updating container status for IP: %s with data: %+v", ip, statusDTO)
 
 	existing, err := uc.repo.Find(&dto.ContainerStatusFilter{IPAddress: &ip})
@@ -91,6 +103,12 @@ func (uc *ContainerStatusUseCase) UpdateContainerStatus(ip string, statusDTO *dt
 	}
 	if !statusDTO.LastSuccessfulPing.IsZero() {
 		status.LastSuccessfulPing = statusDTO.LastSuccessfulPing
+	}
+	if statusDTO.Status != "" {
+		status.Status = statusDTO.Status
+	}
+	if statusDTO.Name != "" {
+		status.Name = statusDTO.Name
 	}
 
 	status.UpdatedAt = time.Now()
@@ -116,7 +134,10 @@ func (uc *ContainerStatusUseCase) DeleteContainerStatusByIP(ip string) error {
 	}
 
 	if len(existing) == 0 {
-		uc.logger.Warnf("USECASES: attempted to delete non-existent container status for IP: %s", ip)
+		uc.logger.Warnf(
+			"USECASES: attempted to delete non-existent container status for IP: %s",
+			ip,
+		)
 		return fmt.Errorf("container status with IP %s not found", ip)
 	}
 
@@ -134,7 +155,9 @@ func (uc *ContainerStatusUseCase) DeleteContainerStatusByIP(ip string) error {
 func mapDomainToDTO(status *domain.ContainerStatus) *dto.ContainerStatusDTO {
 	return &dto.ContainerStatusDTO{
 		ID:                 status.ID,
+		Name:               status.Name,
 		IPAddress:          status.IPAddress,
+		Status:             status.Status,
 		PingTime:           status.PingTime,
 		LastSuccessfulPing: status.LastSuccessfulPing,
 		UpdatedAt:          status.UpdatedAt,

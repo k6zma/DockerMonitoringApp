@@ -32,7 +32,14 @@ func LoggingMiddleware(logger utils.LoggerInterface) func(http.Handler) http.Han
 			duration := time.Since(start)
 
 			if wrapper.statusCode >= 200 && wrapper.statusCode < 400 {
-				logger.Infof("REQUESTS: %s - %s - %s - %d - %s", clientIP, r.Method, r.URL.Path, wrapper.statusCode, duration)
+				logger.Infof(
+					"REQUESTS: %s - %s - %s - %d - %s",
+					clientIP,
+					r.Method,
+					r.URL.Path,
+					wrapper.statusCode,
+					duration,
+				)
 			} else {
 				logger.Errorf("REQUESTS: %s - %s - %s - %d - %s", clientIP, r.Method, r.URL.Path, wrapper.statusCode, duration)
 			}

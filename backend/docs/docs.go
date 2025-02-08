@@ -51,6 +51,18 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "Filter by name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
                         "type": "number",
                         "description": "Filter by minimum ping time",
                         "name": "ping_time_min",
@@ -267,7 +279,7 @@ const docTemplate = `{
             "required": [
                 "ip_address",
                 "last_successful_ping",
-                "ping_time"
+                "status"
             ],
             "properties": {
                 "ip_address": {
@@ -276,9 +288,23 @@ const docTemplate = `{
                 "last_successful_ping": {
                     "type": "string"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "ping_time": {
-                    "type": "number",
-                    "minimum": 1
+                    "type": "number"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "created",
+                        "restarting",
+                        "running",
+                        "removing",
+                        "paused",
+                        "exited",
+                        "dead"
+                    ]
                 }
             }
         },
@@ -297,8 +323,14 @@ const docTemplate = `{
                 "last_successful_ping": {
                     "type": "string"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "ping_time": {
                     "type": "number"
+                },
+                "status": {
+                    "type": "string"
                 },
                 "updated_at": {
                     "type": "string"
@@ -311,8 +343,23 @@ const docTemplate = `{
                 "last_successful_ping": {
                     "type": "string"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "ping_time": {
                     "type": "number"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "created",
+                        "restarting",
+                        "running",
+                        "removing",
+                        "paused",
+                        "exited",
+                        "dead"
+                    ]
                 }
             }
         }

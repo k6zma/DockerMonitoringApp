@@ -151,7 +151,8 @@ func TestUpdateContainerStatus_ErrorFetching(t *testing.T) {
 	mockDTO := &dto.ContainerStatusDTO{PingTime: testPingTimeUpdated}
 
 	mockLogger.On("Debugf", mock.Anything, mock.Anything, mock.Anything).Return()
-	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).Return(nil, fmt.Errorf("database error"))
+	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).
+		Return(nil, fmt.Errorf("database error"))
 	mockLogger.On("Errorf", mock.Anything, mock.Anything, mock.Anything).Return()
 
 	err := useCase.UpdateContainerStatus(mockIP, mockDTO)
@@ -171,7 +172,8 @@ func TestDeleteContainerStatusByIP_ErrorFetching(t *testing.T) {
 	mockIP := testContainerIP
 
 	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
-	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).Return(nil, fmt.Errorf("database error"))
+	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).
+		Return(nil, fmt.Errorf("database error"))
 	mockLogger.On("Errorf", mock.Anything, mock.Anything, mock.Anything).Return()
 
 	err := useCase.DeleteContainerStatusByIP(mockIP)
@@ -191,7 +193,8 @@ func TestDeleteContainerStatusByIP_NotFound(t *testing.T) {
 	mockIP := testContainerIP
 
 	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
-	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).Return([]*domain.ContainerStatus{}, nil)
+	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).
+		Return([]*domain.ContainerStatus{}, nil)
 	mockLogger.On("Warnf", mock.Anything, mock.Anything, mock.Anything).Return()
 
 	err := useCase.DeleteContainerStatusByIP(mockIP)
@@ -240,7 +243,8 @@ func TestDeleteContainerStatusByIP_Success(t *testing.T) {
 	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
 	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).Return(existingStatus, nil)
 	mockRepo.On("DeleteByIP", mockIP).Return(nil)
-	mockLogger.On("Debugf", "USECASES: successfully deleted container status for IP: %s", mockIP).Return()
+	mockLogger.On("Debugf", "USECASES: successfully deleted container status for IP: %s", mockIP).
+		Return()
 
 	err := useCase.DeleteContainerStatusByIP(mockIP)
 
@@ -259,9 +263,12 @@ func TestUpdateContainerStatus_NotFound(t *testing.T) {
 	mockIP := testContainerIP
 	mockDTO := &dto.ContainerStatusDTO{PingTime: testPingTimeUpdated}
 
-	mockLogger.On("Debugf", "USECASES: updating container status for IP: %s with data: %+v", mockIP, mock.Anything).Return()
-	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).Return([]*domain.ContainerStatus{}, nil)
-	mockLogger.On("Errorf", "USECASES: error fetching container status with IP %s not found", mockIP).Return()
+	mockLogger.On("Debugf", "USECASES: updating container status for IP: %s with data: %+v", mockIP, mock.Anything).
+		Return()
+	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).
+		Return([]*domain.ContainerStatus{}, nil)
+	mockLogger.On("Errorf", "USECASES: error fetching container status with IP %s not found", mockIP).
+		Return()
 
 	err := useCase.UpdateContainerStatus(mockIP, mockDTO)
 
@@ -284,10 +291,12 @@ func TestUpdateContainerStatus_UpdateError(t *testing.T) {
 		{ID: testContainerID, IPAddress: mockIP, PingTime: testPingTimeDefault},
 	}
 
-	mockLogger.On("Debugf", "USECASES: updating container status for IP: %s with data: %+v", mockIP, mock.Anything).Return()
+	mockLogger.On("Debugf", "USECASES: updating container status for IP: %s with data: %+v", mockIP, mock.Anything).
+		Return()
 	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).Return(existingStatus, nil)
 	mockRepo.On("Update", mock.Anything).Return(fmt.Errorf("update failed"))
-	mockLogger.On("Errorf", "USECASES: failed to update container status for IP %s: %v", mockIP, mock.Anything).Return()
+	mockLogger.On("Errorf", "USECASES: failed to update container status for IP %s: %v", mockIP, mock.Anything).
+		Return()
 
 	err := useCase.UpdateContainerStatus(mockIP, mockDTO)
 

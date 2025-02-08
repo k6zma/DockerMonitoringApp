@@ -42,10 +42,19 @@ func main() {
 	if err != nil {
 		utils.LoggerInstance.Fatalf("ENTRY POINT: failed to load configuration: %v", err)
 	}
-	utils.LoggerInstance.Infof("ENTRY POINT: loaded configuration: Server - %+v, DB - %+v, MigrationsConfig - %+v, API Key - %+v",
-		cfg.Server, cfg.DB, cfg.MigrationsConfig, cfg.AuthAPI)
+	utils.LoggerInstance.Infof(
+		"ENTRY POINT: loaded configuration: Server - %+v, DB - %+v, MigrationsConfig - %+v, API Key - %+v",
+		cfg.Server,
+		cfg.DB,
+		cfg.MigrationsConfig,
+		cfg.AuthAPI,
+	)
 
-	utils.LoggerInstance.Infof("ENTRY POINT: conecting to database \"%s:%d\"", cfg.DB.Host, cfg.DB.Port)
+	utils.LoggerInstance.Infof(
+		"ENTRY POINT: conecting to database \"%s:%d\"",
+		cfg.DB.Host,
+		cfg.DB.Port,
+	)
 	database, err := postgres.NewPsqlDB(cfg.DB)
 	if err != nil {
 		utils.LoggerInstance.Fatalf("ENTRY POINT: failed to connect to database: %v", err)
@@ -61,7 +70,10 @@ func main() {
 	}()
 	utils.LoggerInstance.Info("ENTRY POINT: database connected successfully")
 
-	utils.LoggerInstance.Infof("ENTRY POINT: applying migrations from \"%s\" folder", cfg.MigrationsConfig.Path)
+	utils.LoggerInstance.Infof(
+		"ENTRY POINT: applying migrations from \"%s\" folder",
+		cfg.MigrationsConfig.Path,
+	)
 
 	mig := migrations.NewMigrate(database, cfg.MigrationsConfig.Path, logger)
 	switch cfg.MigrationsConfig.Type {
@@ -72,7 +84,10 @@ func main() {
 	case "rollback":
 		err = mig.RollbackMigrations()
 	default:
-		utils.LoggerInstance.Fatalf("ENTRY POINT: unknown migrations type: %s", cfg.MigrationsConfig.Path)
+		utils.LoggerInstance.Fatalf(
+			"ENTRY POINT: unknown migrations type: %s",
+			cfg.MigrationsConfig.Path,
+		)
 	}
 
 	if err != nil {
@@ -80,7 +95,10 @@ func main() {
 	}
 	utils.LoggerInstance.Info("ENTRY POINT: migrations applied successfully")
 
-	utils.LoggerInstance.Infof("ENTRY POINT: starting server on port \"localhost:%d\"", cfg.Server.Port)
+	utils.LoggerInstance.Infof(
+		"ENTRY POINT: starting server on port \"localhost:%d\"",
+		cfg.Server.Port,
+	)
 	serv := server.NewServer(cfg, database, logger)
 	go func() {
 		if err := serv.Start(); err != nil {

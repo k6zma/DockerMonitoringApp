@@ -14,7 +14,11 @@ type AppFlags struct {
 
 func ParseFlags() (*AppFlags, error) {
 	configFile := flag.String("config_path", "config.json", "Path to json configuration file")
-	loggerLevel := flag.String("logger_level", "debug", "Logger level (debug, info, warn, error, dpanic, panic, fatal)")
+	loggerLevel := flag.String(
+		"logger_level",
+		"debug",
+		"Logger level (debug, info, warn, error, dpanic, panic, fatal)",
+	)
 
 	flag.Parse()
 

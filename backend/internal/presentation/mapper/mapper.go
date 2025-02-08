@@ -8,6 +8,8 @@ import (
 func MapCreateRequestToAppDTO(req pdto.CreateContainerStatusRequest) adto.ContainerStatusDTO {
 	return adto.ContainerStatusDTO{
 		IPAddress:          req.IPAddress,
+		Name:               req.Name,
+		Status:             req.Status,
 		PingTime:           req.PingTime,
 		LastSuccessfulPing: req.LastSuccessfulPing,
 	}
@@ -15,6 +17,8 @@ func MapCreateRequestToAppDTO(req pdto.CreateContainerStatusRequest) adto.Contai
 
 func MapUpdateRequestToAppDTO(req pdto.UpdateContainerStatusRequest) adto.ContainerStatusDTO {
 	return adto.ContainerStatusDTO{
+		Name:               req.Name,
+		Status:             req.Status,
 		PingTime:           req.PingTime,
 		LastSuccessfulPing: req.LastSuccessfulPing,
 	}
@@ -23,7 +27,9 @@ func MapUpdateRequestToAppDTO(req pdto.UpdateContainerStatusRequest) adto.Contai
 func MapAppDTOToResponse(appDTO adto.ContainerStatusDTO) pdto.GetContainerStatusResponse {
 	return pdto.GetContainerStatusResponse{
 		ID:                 appDTO.ID,
+		Name:               appDTO.Name,
 		IPAddress:          appDTO.IPAddress,
+		Status:             appDTO.Status,
 		PingTime:           appDTO.PingTime,
 		LastSuccessfulPing: appDTO.LastSuccessfulPing,
 		CreatedAt:          appDTO.CreatedAt,
