@@ -8,6 +8,7 @@ import (
 	dockerClient "github.com/docker/docker/client"
 
 	"github.com/k6zma/DockerMonitoringApp/pinger/internal/application/repositories"
+	"github.com/k6zma/DockerMonitoringApp/pinger/internal/domain"
 	"github.com/k6zma/DockerMonitoringApp/pinger/internal/infrastructure/config"
 	"github.com/k6zma/DockerMonitoringApp/pinger/pkg/utils"
 )
@@ -32,19 +33,26 @@ func NewDockerContainerRepo(
 	return &DockerContainerRepo{client: client, logger: logger}, nil
 }
 
-func (r *DockerContainerRepo) GetIPs(ctx context.Context) ([]string, error) {
+func (r *DockerContainerRepo) GetContainers(ctx context.Context) ([]domain.ContainerInfo, error) {
 	containers, err := r.client.ContainerList(ctx, container.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("container list failed: %w", err)
 	}
 
-	ips := make([]string, 0, len(containers))
-	for i := range containers {
-		for _, n := range containers[i].NetworkSettings.Networks {
-			ips = append(ips, n.IPAddress)
+	containerList := make([]domain.ContainerInfo, 0, len(containers))
+	for _, c := range containers {
+		var ip string
+		for _, n := range c.NetworkSettings.Networks {
+			ip = n.IPAddress
 			break
 		}
+
+		containerList = append(containerList, domain.ContainerInfo{
+			IP:     ip,
+			Name:   c.Names[0],
+			Status: c.State,
+		})
 	}
 
-	return ips, nil
+	return containerList, nil
 }

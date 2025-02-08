@@ -56,35 +56,43 @@ func (uc *PingerUsecase) Run(ctx context.Context) error {
 
 func (uc *PingerUsecase) checkContainers(ctx context.Context) error {
 	uc.logger.Debug("Checking containers")
-	ips, err := uc.containerRepo.GetIPs(ctx)
+
+	containers, err := uc.containerRepo.GetContainers(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get container IPs: %w", err)
+		return fmt.Errorf("failed to get container info: %w", err)
 	}
-	uc.logger.Debugf("Discovered %d containers: %s", len(ips), strings.Join(ips, ", "))
+
+	containerInfos := make([]string, 0, len(containers))
+	for _, container := range containers {
+		containerInfos = append(containerInfos, fmt.Sprintf("%s (%s) [%s]", container.Name, container.IP, container.Status))
+	}
+	uc.logger.Debugf("Discovered %d containers: %s", len(containers), strings.Join(containerInfos, ", "))
 
 	uc.logger.Debug("Pinging containers")
-	for _, ip := range ips {
-		result, err := uc.ping(ip)
-
-		uc.logger.Debugf("Ping result for %s: %+v", ip, result)
+	for _, container := range containers {
+		result, err := uc.ping(container)
 		if err != nil {
-			uc.logger.Warnf("Ping failed for %s: %v", ip, err)
+			uc.logger.Warnf("Ping failed for container %s (%s) [%s]: %v", container.Name, container.IP, container.Status, err)
 			continue
 		}
 
-		uc.logger.Debugf("Ping result for %s: %.2f ms", ip, result.PingTime)
-		if err := uc.updateStatus(ctx, ip, result); err != nil {
-			uc.logger.Errorf("Failed to update status for %s: %v", ip, err)
+		uc.logger.Debugf("Ping successful for container %s (%s) [%s]: %.2f ms", container.Name, container.IP, container.Status, result.PingTime)
+
+		result.Name = container.Name
+		result.Status = container.Status
+
+		if err := uc.updateStatus(ctx, result); err != nil {
+			uc.logger.Errorf("Failed to update status for container %s (%s) [%s]: %v", container.Name, container.IP, container.Status, err)
 		}
 	}
 
 	return nil
 }
 
-func (uc *PingerUsecase) ping(ip string) (*domain.PingResult, error) {
-	uc.logger.Debugf("Pinging %s", ip)
+func (uc *PingerUsecase) ping(container domain.ContainerInfo) (*domain.PingResult, error) {
+	uc.logger.Debugf("Pinging container %s (%s) [%s]", container.Name, container.IP, container.Status)
 
-	pinger, err := probing.NewPinger(ip)
+	pinger, err := probing.NewPinger(container.IP)
 	if err != nil {
 		return nil, fmt.Errorf("ping init failed: %w", err)
 	}
@@ -98,32 +106,32 @@ func (uc *PingerUsecase) ping(ip string) (*domain.PingResult, error) {
 	}
 
 	stats := pinger.Statistics()
-	uc.logger.Debugf("Ping stats for %s: %+v", ip, stats)
+	uc.logger.Debugf("Ping stats for container %s (%s) [%s]: %+v", container.Name, container.IP, container.Status, stats)
 
-	var pingTime float64
+	var pingTime int64 = -1
 	if stats.PacketsRecv > 0 {
-		pingTime = float64(stats.AvgRtt.Milliseconds())
+		pingTime = stats.AvgRtt.Microseconds()
 	}
 
-	uc.logger.Debugf("Ping time for %s: %.2f ms", ip, pingTime)
+	uc.logger.Debugf("Ping time for container %s (%s) [%s]: %.2f ms", container.Name, container.IP, container.Status, pingTime)
 
 	return &domain.PingResult{
-		IP:       ip,
+		IP:       container.IP,
+		Name:     container.Name,
+		Status:   container.Status,
 		Success:  stats.PacketsRecv > 0,
 		PingTime: pingTime,
 	}, nil
 }
 
-func (uc *PingerUsecase) updateStatus(
-	ctx context.Context,
-	ip string,
-	result *domain.PingResult,
-) error {
-	if err := uc.statusRepo.UpdateStatus(ctx, ip, result.PingTime); err != nil {
-		uc.logger.Warnf("Update failed for %s, trying to create: %v", ip, err)
+func (uc *PingerUsecase) updateStatus(ctx context.Context, result *domain.PingResult) error {
+	if err := uc.statusRepo.UpdateStatus(ctx, result.IP, result.PingTime, result.Name, result.Status); err != nil {
+		uc.logger.Warnf("Update failed for container %s (%s) [%s], trying to create: %v",
+			result.Name, result.IP, result.Status, err)
 
-		if err := uc.statusRepo.CreateStatus(ctx, ip, result.PingTime); err != nil {
-			return fmt.Errorf("create status failed: %w", err)
+		if err := uc.statusRepo.CreateStatus(ctx, result.IP, result.PingTime, result.Name, result.Status); err != nil {
+			return fmt.Errorf("create status failed for container %s (%s) [%s]: %w",
+				result.Name, result.IP, result.Status, err)
 		}
 	}
 

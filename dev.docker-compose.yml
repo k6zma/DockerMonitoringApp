@@ -19,10 +19,37 @@ services:
       timeout: 5s
       retries: 5
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend_service
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  pinger:
+    build:
+      context: ./pinger
+      dockerfile: Dockerfile
+    container_name: pinger_service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - db
+    networks:
+      - app-network
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
 networks:
   app-network:
     driver: bridge
 
 volumes:
   db_data:
-

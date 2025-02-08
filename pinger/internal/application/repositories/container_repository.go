@@ -1,7 +1,11 @@
 package repositories
 
-import "context"
+import (
+	"context"
+
+	"github.com/k6zma/DockerMonitoringApp/pinger/internal/domain"
+)
 
 type ContainerRepository interface {
-	GetIPs(ctx context.Context) ([]string, error)
+	GetContainers(ctx context.Context) ([]domain.ContainerInfo, error)
 }

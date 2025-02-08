@@ -2,6 +2,14 @@ package domain
 
 type PingResult struct {
 	IP       string
+	Name     string
+	Status   string
 	Success  bool
-	PingTime float64
+	PingTime int64
+}
+
+type ContainerInfo struct {
+	IP     string
+	Name   string
+	Status string
 }
