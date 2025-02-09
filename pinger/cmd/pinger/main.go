@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,20 +16,22 @@ import (
 )
 
 func main() {
-	flags, err := flags.ParseFlags()
+	flagsData, err := flags.ParseFlags()
 	if err != nil {
-		log.Fatalf("Failed to parse flags: %v", err)
+		panic(fmt.Errorf("flags parsing failed: %w", err))
 	}
 
-	logger, err := utils.NewLogger(flags.LoggerLevel)
+	logger, err := utils.NewLogger(flagsData.LoggerLevel)
 	if err != nil {
-		log.Fatalf("Logger initialization failed: %v", err)
+		panic(fmt.Errorf("logger init failed: %w", err))
 	}
 
-	cfg, err := config.Load(flags.ConfigFilePath)
+	logger.Infof("Loading config from %s", flagsData.ConfigFilePath)
+	cfg, err := config.Load(flagsData.ConfigFilePath)
 	if err != nil {
 		logger.Fatalf("Config error: %v", err)
 	}
+	logger.Infof("Config loaded: Backend - %+v, Ping - %+v, Docker - %+v", *cfg.Backend, *cfg.Ping, *cfg.Docker)
 
 	containerRepo, err := docker.NewDockerContainerRepo(cfg, logger)
 	if err != nil {
@@ -45,27 +47,23 @@ func main() {
 	pinger := usecases.NewPingerUsecase(
 		containerRepo,
 		statusRepo,
-		cfg.PingInterval,
+		cfg.Ping.PingInterval,
 		logger,
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	setupShutdownHandler(cancel, logger)
-
-	if err := pinger.Run(ctx); err != nil {
-		logger.Fatalf("Pinger service failed: %v", err)
-	}
-}
-
-func setupShutdownHandler(cancel context.CancelFunc, logger utils.LoggerInterface) {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	go func() {
-		sig := <-sigChan
+		sig := <-stop
 		logger.Infof("Received signal: %v", sig)
 		cancel()
 	}()
+
+	logger.Info("Starting pinger service")
+	if err := pinger.Run(ctx); err != nil {
+		logger.Fatalf("Pinger service failed: %v", err)
+	}
 }
