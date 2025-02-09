@@ -61,11 +61,12 @@ func (uc *PingerUsecase) checkContainers(ctx context.Context) error {
 		return fmt.Errorf("failed to get container info: %w", err)
 	}
 
-	activeIPs := make(map[string]bool)
+	activeContainerIDs := make(map[string]bool)
 	containerInfos := make([]string, 0, len(containers))
 	for _, container := range containers {
-		activeIPs[container.IP] = true
-		containerInfos = append(containerInfos, fmt.Sprintf("%s (%s) [%s]", container.Name, container.IP, container.Status))
+		activeContainerIDs[container.ContainerID] = true
+		containerInfos = append(containerInfos,
+			fmt.Sprintf("%s (ID: %s, IP: %s) [%s]", container.Name, container.ContainerID, container.IP, container.Status))
 	}
 	uc.logger.Debugf("Discovered %d containers: %s", len(containers), strings.Join(containerInfos, ", "))
 
@@ -77,27 +78,45 @@ func (uc *PingerUsecase) checkContainers(ctx context.Context) error {
 		go func(container domain.ContainerInfo) {
 			defer wg.Done()
 
-			result, err := uc.ping(container)
-			if err != nil {
-				uc.logger.Warnf("Ping failed for container %s (%s) [%s]: %v", container.Name, container.IP, container.Status, err)
-				return
+			var result *domain.PingResult
+			if container.IP == "" {
+				uc.logger.Warnf("No IP for container %s (ID: %s), updating status as %s", container.Name, container.ContainerID, container.Status)
+				result = &domain.PingResult{
+					ContainerID: container.ContainerID,
+					IP:          "",
+					Name:        container.Name,
+					Status:      container.Status,
+					Success:     false,
+					PingTime:    0,
+					LastPing:    time.Now().Format(time.RFC3339),
+				}
+			} else {
+				res, err := uc.ping(container)
+				if err != nil {
+					uc.logger.Warnf("Ping failed for container %s (ID: %s, IP: %s) [%s]: %v",
+						container.Name, container.ContainerID, container.IP, container.Status, err)
+					res = &domain.PingResult{
+						ContainerID: container.ContainerID,
+						IP:          container.IP,
+						Name:        container.Name,
+						Status:      container.Status,
+						Success:     false,
+						PingTime:    0,
+						LastPing:    time.Now().Format(time.RFC3339),
+					}
+				}
+				result = res
 			}
 
-			uc.logger.Debugf("Ping successful for container %s (%s) [%s]: %.2f ms", container.Name, container.IP, container.Status, result.PingTime)
-
-			result.Name = container.Name
-			result.Status = container.Status
-
 			if err := uc.updateStatus(ctx, result); err != nil {
-				uc.logger.Errorf("Failed to update status for container %s (%s) [%s]: %v", container.Name, container.IP, container.Status, err)
-				return
+				uc.logger.Errorf("Failed to update status for container %s (ID: %s, IP: %s) [%s]: %v",
+					container.Name, container.ContainerID, container.IP, container.Status, err)
 			}
 		}(container)
 	}
-
 	wg.Wait()
 
-	if err := uc.cleanupStatuses(ctx, activeIPs); err != nil {
+	if err := uc.cleanupStatuses(ctx, activeContainerIDs); err != nil {
 		uc.logger.Errorf("Cleanup statuses failed: %v", err)
 		return fmt.Errorf("cleanup statuses failed: %w", err)
 	}
@@ -106,11 +125,13 @@ func (uc *PingerUsecase) checkContainers(ctx context.Context) error {
 }
 
 func (uc *PingerUsecase) ping(container domain.ContainerInfo) (*domain.PingResult, error) {
-	uc.logger.Debugf("Pinging container %s (%s) [%s]", container.Name, container.IP, container.Status)
+	uc.logger.Debugf("Pinging container %s (ID: %s, IP: %s) [%s]",
+		container.Name, container.ContainerID, container.IP, container.Status)
 
 	pinger, err := probing.NewPinger(container.IP)
 	if err != nil {
-		uc.logger.Errorf("Ping init failed for container %s (%s) [%s]: %v", container.Name, container.IP, container.Status, err)
+		uc.logger.Errorf("Ping init failed for container %s (ID: %s, IP: %s) [%s]: %v",
+			container.Name, container.ContainerID, container.IP, container.Status, err)
 		return nil, fmt.Errorf("ping init failed: %w", err)
 	}
 
@@ -119,50 +140,50 @@ func (uc *PingerUsecase) ping(container domain.ContainerInfo) (*domain.PingResul
 	pinger.SetPrivileged(true)
 
 	if err := pinger.Run(); err != nil {
-		uc.logger.Errorf("Ping execution failed for container %s (%s) [%s]: %v", container.Name, container.IP, container.Status, err)
+		uc.logger.Errorf("Ping execution failed for container %s (ID: %s, IP: %s) [%s]: %v",
+			container.Name, container.ContainerID, container.IP, container.Status, err)
 		return nil, fmt.Errorf("ping execution failed: %w", err)
 	}
 
 	stats := pinger.Statistics()
-	uc.logger.Debugf("Ping stats for container %s (%s) [%s]: %+v", container.Name, container.IP, container.Status, stats)
+	uc.logger.Debugf("Ping stats for container %s (ID: %s, IP: %s) [%s]: %+v",
+		container.Name, container.ContainerID, container.IP, container.Status, stats)
 
 	var pingTime int64 = -1
 	if stats.PacketsRecv > 0 {
 		pingTime = stats.AvgRtt.Microseconds()
 	}
 
-	uc.logger.Debugf("Ping time for container %s (%s) [%s]: %.2f ms", container.Name, container.IP, container.Status, pingTime)
+	uc.logger.Debugf("Ping time for container %s (ID: %s, IP: %s) [%s]: %.2f ms",
+		container.Name, container.ContainerID, container.IP, container.Status, pingTime)
 
 	return &domain.PingResult{
-		IP:       container.IP,
-		Name:     container.Name,
-		Status:   container.Status,
-		Success:  stats.PacketsRecv > 0,
-		PingTime: pingTime,
+		ContainerID: container.ContainerID,
+		IP:          container.IP,
+		Name:        container.Name,
+		Status:      container.Status,
+		Success:     stats.PacketsRecv > 0,
+		PingTime:    pingTime,
 	}, nil
 }
 
 func (uc *PingerUsecase) updateStatus(ctx context.Context, result *domain.PingResult) error {
-	if !result.Success {
-		uc.logger.Infof("Skipping update for container %s (%s) [%s] as ping was not successful", result.Name, result.IP, result.Status)
-		return nil
-	}
+	if err := uc.statusRepo.UpdateStatus(ctx, result.ContainerID, result.PingTime, result.Name, result.Status, result.Success); err != nil {
+		uc.logger.Warnf("Update failed for container %s (ID: %s, IP: %s) [%s], trying to create: %v",
+			result.Name, result.ContainerID, result.IP, result.Status, err)
 
-	if err := uc.statusRepo.UpdateStatus(ctx, result.IP, result.PingTime, result.Name, result.Status); err != nil {
-		uc.logger.Warnf("Update failed for container %s (%s) [%s], trying to create: %v",
-			result.Name, result.IP, result.Status, err)
-
-		if err := uc.statusRepo.CreateStatus(ctx, result.IP, result.PingTime, result.Name, result.Status); err != nil {
-			uc.logger.Errorf("Create status failed for container %s (%s) [%s]: %v", result.Name, result.IP, result.Status, err)
-			return fmt.Errorf("create status failed for container %s (%s) [%s]: %w",
-				result.Name, result.IP, result.Status, err)
+		if err := uc.statusRepo.CreateStatus(ctx, result.ContainerID, result.IP, result.PingTime, result.Name, result.Status); err != nil {
+			uc.logger.Errorf("Create status failed for container %s (ID: %s, IP: %s) [%s]: %v",
+				result.Name, result.ContainerID, result.IP, result.Status, err)
+			return fmt.Errorf("create status failed for container %s (ID: %s, IP: %s) [%s]: %w",
+				result.Name, result.ContainerID, result.IP, result.Status, err)
 		}
 	}
 
 	return nil
 }
 
-func (uc *PingerUsecase) cleanupStatuses(ctx context.Context, activeIPs map[string]bool) error {
+func (uc *PingerUsecase) cleanupStatuses(ctx context.Context, activeContainerIDs map[string]bool) error {
 	uc.logger.Debug("Cleaning up statuses")
 	statuses, err := uc.statusRepo.GetStatuses(ctx)
 	if err != nil {
@@ -175,19 +196,18 @@ func (uc *PingerUsecase) cleanupStatuses(ctx context.Context, activeIPs map[stri
 	}
 
 	for _, status := range statuses {
-		if status.IP == "" {
-			uc.logger.Debugf("Skipping deletion for container %s with empty IP", status.Name)
+		if status.ContainerID == "" {
+			uc.logger.Debugf("Skipping deletion for container %s with empty container_id", status.Name)
 			continue
 		}
 
-		if !activeIPs[status.IP] {
-			uc.logger.Debugf("Container with IP %s not found among active containers. Deleting its record.", status.IP)
-
-			if err := uc.statusRepo.DeleteStatus(ctx, status.IP); err != nil {
-				uc.logger.Errorf("Failed to delete status for %s: %v", status.IP, err)
-				return fmt.Errorf("failed to delete status for %s: %w", status.IP, err)
+		if !activeContainerIDs[status.ContainerID] {
+			uc.logger.Debugf("Container with container_id %s not found among active containers. Deleting its record.", status.ContainerID)
+			if err := uc.statusRepo.DeleteStatus(ctx, status.ContainerID); err != nil {
+				uc.logger.Errorf("Failed to delete status for container_id %s: %v", status.ContainerID, err)
+				return fmt.Errorf("failed to delete status for container_id %s: %w", status.ContainerID, err)
 			} else {
-				uc.logger.Debug("Successfully deleted status for container %s with IP %s", status.Name, status.IP)
+				uc.logger.Debugf("Successfully deleted status for container %s with container_id %s", status.Name, status.ContainerID)
 			}
 		}
 	}

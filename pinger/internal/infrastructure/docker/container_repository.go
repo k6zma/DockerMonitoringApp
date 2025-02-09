@@ -44,7 +44,7 @@ func (r *DockerContainerRepo) GetContainers(ctx context.Context) ([]domain.Conta
 	}
 
 	for i := range containers {
-		r.logger.Debugf("Found container: %s with IP: %s", containers[i].Names[0], containers[i].NetworkSettings.Networks)
+		r.logger.Debugf("Found container: %s with IPs: %v, ID: %s", containers[i].Names[0], containers[i].NetworkSettings.Networks, containers[i].ID)
 	}
 
 	containerList := make([]domain.ContainerInfo, 0, len(containers))
@@ -56,9 +56,10 @@ func (r *DockerContainerRepo) GetContainers(ctx context.Context) ([]domain.Conta
 		}
 
 		containerList = append(containerList, domain.ContainerInfo{
-			IP:     ip,
-			Name:   containers[i].Names[0],
-			Status: containers[i].State,
+			ContainerID: containers[i].ID,
+			IP:          ip,
+			Name:        containers[i].Names[0],
+			Status:      containers[i].State,
 		})
 	}
 

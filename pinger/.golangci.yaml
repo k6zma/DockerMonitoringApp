@@ -8,14 +8,12 @@ linters:
     - dogsled
     - dupl
     - errcheck
-    - exhaustive
     - gochecknoinits
     - goconst
     - gocritic
     - gocyclo
     - gofmt
     - goimports
-    - revive
     - goprintffuncname
     - gosec
     - gosimple
@@ -46,7 +44,7 @@ linters-settings:
     lines: 120
     statements: 50
   goimports:
-    local-prefixes: github.com/k6zma/DockerMonitoringApp/backend
+    local-prefixes: github.com/k6zma/DockerMonitoringApp/pinger
   gocritic:
     enabled-tags:
       - style
