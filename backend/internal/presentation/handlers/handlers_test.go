@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	ipAddress = "192.168.1.101"
-	pingTime  = 15.5
+	containerID = "container123"
+	ipAddress   = "192.168.1.101"
+	pingTime    = 15.5
 )
 
 func TestGetContainerStatuses_ReturnsDataSuccessfully(t *testing.T) {
@@ -69,7 +70,7 @@ func TestGetContainerStatuses_WithQueryParams_ReturnsFilteredData(t *testing.T) 
 
 	req := httptest.NewRequest(
 		http.MethodGet,
-		"/container_status?ip=192.168.1.101&id=123&ping_time_min=10&ping_time_max=30&created_at_gte=2023-01-01T00:00:00Z"+
+		"/container_status?ip=192.168.1.101&container_id=container123&ping_time_min=10&ping_time_max=30&created_at_gte=2023-01-01T00:00:00Z"+
 			"&created_at_lte=2023-12-31T23:59:59Z&updated_at_gte=2023-06-01T12:00:00Z&updated_at_lte=2023-12-31T23:59:59Z&limit=5",
 		http.NoBody,
 	)
@@ -118,13 +119,17 @@ func TestGetContainerStatuses_InvalidID_ReturnsInternalServerError(t *testing.T)
 	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 
-	req := httptest.NewRequest(http.MethodGet, "/container_status?id=invalid", http.NoBody)
+	mockUseCase.On("FindContainerStatuses", mock.Anything).
+		Return(nil, fmt.Errorf("invalid id")).Once()
+
+	req := httptest.NewRequest(http.MethodGet, "/container_status?container_id=invalid", http.NoBody)
 	rec := httptest.NewRecorder()
 
 	handler.GetFilteredContainerStatuses(rec, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
 	mockLogger.AssertExpectations(t)
+	mockUseCase.AssertExpectations(t)
 }
 
 func TestGetContainerStatuses_InvalidPingTimeMin_ReturnsInternalServerError(t *testing.T) {
@@ -286,6 +291,7 @@ func TestCreateContainerStatus_SuccessfullyCreatesContainer(t *testing.T) {
 	timeData := time.Now()
 
 	requestBody := pdto.CreateContainerStatusRequest{
+		ContainerID:        containerID,
 		IPAddress:          ipAddress,
 		Name:               "test_container",
 		Status:             "exited",
@@ -295,6 +301,7 @@ func TestCreateContainerStatus_SuccessfullyCreatesContainer(t *testing.T) {
 	jsonBody, _ := json.Marshal(requestBody)
 
 	mockUseCase.On("CreateContainerStatus", mock.Anything).Return(&adto.ContainerStatusDTO{
+		ContainerID:        containerID,
 		IPAddress:          ipAddress,
 		Name:               "test_container",
 		Status:             "exited",
@@ -320,7 +327,7 @@ func TestCreateContainerStatus_InvalidJSON_ReturnsBadRequest(t *testing.T) {
 
 	handler := handlers.NewContainerStatusHandler(mockUseCase, mockLogger)
 
-	invalidJSON := []byte(`{"IPAddress": ` + ipAddress + `}`)
+	invalidJSON := []byte(`{"ContainerId": ` + containerID + `}`)
 
 	mockLogger.On("Debugf", mock.Anything).Return()
 	mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
@@ -341,7 +348,7 @@ func TestCreateContainerStatus_InvalidJSONDecode_ReturnsBadRequest(t *testing.T)
 
 	handler := handlers.NewContainerStatusHandler(mockUseCase, mockLogger)
 
-	invalidJSON := []byte(`{"IPAddress":}`)
+	invalidJSON := []byte(`{"ContainerID":}`)
 
 	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
@@ -363,6 +370,7 @@ func TestCreateContainerStatus_ErrorFromUseCase_ReturnsInternalServerError(t *te
 	handler := handlers.NewContainerStatusHandler(mockUseCase, mockLogger)
 
 	requestBody := pdto.CreateContainerStatusRequest{
+		ContainerID:        containerID,
 		IPAddress:          ipAddress,
 		Name:               "test_container",
 		Status:             "exited",
@@ -396,17 +404,21 @@ func TestUpdateContainerStatus_SuccessfullyUpdatesContainer(t *testing.T) {
 	requestBody := pdto.UpdateContainerStatusRequest{
 		PingTime: pingTime,
 	}
-	jsonBody, _ := json.Marshal(requestBody)
+	jsonBody, err := json.Marshal(requestBody)
+	assert.NoError(t, err)
 
-	mockUseCase.On("UpdateContainerStatus", ipAddress, mock.Anything).Return(nil)
+	mockUseCase.
+		On("UpdateContainerStatus", containerID, mock.AnythingOfType("*dto.ContainerStatusDTO")).
+		Return(nil).
+		Once()
 	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
 
 	req := httptest.NewRequest(
 		http.MethodPatch,
-		"/container_status/"+ipAddress,
+		"/container_status/"+containerID,
 		bytes.NewReader(jsonBody),
 	)
-	req = mux.SetURLVars(req, map[string]string{"ip": ipAddress})
+	req = mux.SetURLVars(req, map[string]string{"container_id": containerID})
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 
@@ -426,19 +438,23 @@ func TestUpdateContainerStatus_ErrorFromUseCase_ReturnsInternalServerError(t *te
 	requestBody := pdto.UpdateContainerStatusRequest{
 		PingTime: pingTime,
 	}
-	jsonBody, _ := json.Marshal(requestBody)
+	jsonBody, err := json.Marshal(requestBody)
+	assert.NoError(t, err)
 
-	mockUseCase.On("UpdateContainerStatus", ipAddress, mock.Anything).
-		Return(fmt.Errorf("update failed"))
+	mockUseCase.
+		On("UpdateContainerStatus", containerID, mock.AnythingOfType("*dto.ContainerStatusDTO")).
+		Return(fmt.Errorf("update failed")).
+		Once()
 	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Errorf", mock.Anything, mock.Anything, mock.Anything).Return()
 
 	req := httptest.NewRequest(
 		http.MethodPatch,
-		"/container_status/"+ipAddress,
+		"/container_status/"+containerID,
 		bytes.NewReader(jsonBody),
 	)
-	req = mux.SetURLVars(req, map[string]string{"ip": ipAddress})
+
+	req = mux.SetURLVars(req, map[string]string{"container_id": containerID})
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 
@@ -462,10 +478,10 @@ func TestUpdateContainerStatus_InvalidJSON_ReturnsBadRequest(t *testing.T) {
 
 	req := httptest.NewRequest(
 		http.MethodPatch,
-		"/container_status/"+ipAddress,
+		"/container_status/"+containerID,
 		bytes.NewReader(invalidJSON),
 	)
-	req = mux.SetURLVars(req, map[string]string{"ip": ipAddress})
+	req = mux.SetURLVars(req, map[string]string{"containerID": containerID})
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 
@@ -491,10 +507,10 @@ func TestUpdateContainerStatus_NoFieldsProvided_ReturnsBadRequest(t *testing.T) 
 
 	req := httptest.NewRequest(
 		http.MethodPatch,
-		"/container_status/"+ipAddress,
+		"/container_status/"+containerID,
 		bytes.NewReader(jsonBody),
 	)
-	req = mux.SetURLVars(req, map[string]string{"ip": ipAddress})
+	req = mux.SetURLVars(req, map[string]string{"containerID": containerID})
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 
@@ -510,11 +526,12 @@ func TestDeleteContainerStatus_SuccessfullyDeletesContainer(t *testing.T) {
 
 	handler := handlers.NewContainerStatusHandler(mockUseCase, mockLogger)
 
-	mockUseCase.On("DeleteContainerStatusByIP", ipAddress).Return(nil)
+	mockUseCase.On("DeleteContainerStatusByContainerID", containerID).Return(nil)
 	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
 
-	req := httptest.NewRequest(http.MethodDelete, "/container_status/"+ipAddress, http.NoBody)
-	req = mux.SetURLVars(req, map[string]string{"ip": ipAddress})
+	req := httptest.NewRequest(http.MethodDelete, "/container_status/"+containerID, http.NoBody)
+
+	req = mux.SetURLVars(req, map[string]string{"container_id": containerID})
 	rec := httptest.NewRecorder()
 
 	handler.DeleteContainerStatus(rec, req)
@@ -530,12 +547,14 @@ func TestDeleteContainerStatus_ErrorFromUseCase_ReturnsInternalServerError(t *te
 
 	handler := handlers.NewContainerStatusHandler(mockUseCase, mockLogger)
 
-	mockUseCase.On("DeleteContainerStatusByIP", ipAddress).Return(fmt.Errorf("delete failed"))
+	mockUseCase.
+		On("DeleteContainerStatusByContainerID", containerID).
+		Return(fmt.Errorf("delete failed"))
 	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Errorf", mock.Anything, mock.Anything, mock.Anything).Return()
 
-	req := httptest.NewRequest(http.MethodDelete, "/container_status/"+ipAddress, http.NoBody)
-	req = mux.SetURLVars(req, map[string]string{"ip": ipAddress})
+	req := httptest.NewRequest(http.MethodDelete, "/container_status/"+containerID, http.NoBody)
+	req = mux.SetURLVars(req, map[string]string{"container_id": containerID})
 	rec := httptest.NewRecorder()
 
 	handler.DeleteContainerStatus(rec, req)
@@ -551,19 +570,20 @@ func TestDeleteContainerStatus_ContainerNotFound_ReturnsNotFound(t *testing.T) {
 
 	handler := handlers.NewContainerStatusHandler(mockUseCase, mockLogger)
 
-	expectedErr := fmt.Errorf("container status with IP %s not found", ipAddress)
-	mockUseCase.On("DeleteContainerStatusByIP", ipAddress).Return(expectedErr)
+	expectedErr := fmt.Errorf("container status with container_id %s not found", containerID)
+	mockUseCase.
+		On("DeleteContainerStatusByContainerID", containerID).
+		Return(expectedErr)
 	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
 
-	req := httptest.NewRequest(http.MethodDelete, "/container_status/"+ipAddress, http.NoBody)
-	req = mux.SetURLVars(req, map[string]string{"ip": ipAddress})
+	req := httptest.NewRequest(http.MethodDelete, "/container_status/"+containerID, http.NoBody)
+	req = mux.SetURLVars(req, map[string]string{"container_id": containerID})
 	rec := httptest.NewRecorder()
 
 	handler.DeleteContainerStatus(rec, req)
 
 	assert.Equal(t, http.StatusNotFound, rec.Code)
-
 	mockUseCase.AssertExpectations(t)
 	mockLogger.AssertExpectations(t)
 }
