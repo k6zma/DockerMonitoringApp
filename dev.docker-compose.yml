@@ -37,6 +37,7 @@ services:
     container_name: pinger_service
     depends_on:
       - db
+      - backend
     networks:
       - app-network
     restart: unless-stopped
@@ -48,11 +49,39 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_BACKEND_API_URL: "/api/v1"
-        NEXT_PUBLIC_BACKEND_AUTH_API_KEY: "your-api-key"
+        NEXT_PUBLIC_BACKEND_API_URL: "${NEXT_PUBLIC_BACKEND_API_URL}"
+        NEXT_PUBLIC_BACKEND_AUTH_API_KEY: "${NEXT_PUBLIC_BACKEND_AUTH_API_KEY}"
     container_name: frontend_service
     depends_on:
+      - db
       - backend
+      - pinger
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  test_container1:
+    image: alpine:latest
+    container_name: test_container1
+    command: tail -f /dev/null
+    depends_on:
+      - db
+      - backend
+      - pinger
+      - frontend
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  test_container2:
+    image: alpine:latest
+    container_name: test_container2
+    command: tail -f /dev/null
+    depends_on:
+      - db
+      - backend
+      - pinger
+      - frontend
     networks:
       - app-network
     restart: unless-stopped
@@ -63,6 +92,7 @@ services:
     depends_on:
       - frontend
       - backend
+      - pinger
     networks:
       - app-network
     ports:
