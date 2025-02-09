@@ -13,8 +13,8 @@ import (
 type ContainerStatusUseCaseInterface interface {
 	FindContainerStatuses(filter *dto.ContainerStatusFilter) ([]*dto.ContainerStatusDTO, error)
 	CreateContainerStatus(statusDTO *dto.ContainerStatusDTO) (*dto.ContainerStatusDTO, error)
-	UpdateContainerStatus(ip string, statusDTO *dto.ContainerStatusDTO) error
-	DeleteContainerStatusByIP(ip string) error
+	UpdateContainerStatus(containerID string, statusDTO *dto.ContainerStatusDTO) error
+	DeleteContainerStatusByContainerID(containerID string) error
 }
 
 type ContainerStatusUseCase struct {
@@ -59,6 +59,7 @@ func (uc *ContainerStatusUseCase) CreateContainerStatus(
 	uc.logger.Debugf("USECASES: creating container status: %+v", statusDTO)
 
 	newStatus := &domain.ContainerStatus{
+		ContainerID:        statusDTO.ContainerID,
 		Name:               statusDTO.Name,
 		IPAddress:          statusDTO.IPAddress,
 		Status:             statusDTO.Status,
@@ -80,20 +81,20 @@ func (uc *ContainerStatusUseCase) CreateContainerStatus(
 }
 
 func (uc *ContainerStatusUseCase) UpdateContainerStatus(
-	ip string,
+	containerID string,
 	statusDTO *dto.ContainerStatusDTO,
 ) error {
-	uc.logger.Debugf("USECASES: updating container status for IP: %s with data: %+v", ip, statusDTO)
+	uc.logger.Debugf("USECASES: updating container status for container ID: %s with data: %+v", containerID, statusDTO)
 
-	existing, err := uc.repo.Find(&dto.ContainerStatusFilter{IPAddress: &ip})
+	existing, err := uc.repo.Find(&dto.ContainerStatusFilter{ContainerID: &containerID})
 	if err != nil {
-		uc.logger.Errorf("USECASES: error fetching container status for IP %s: %v", ip, err)
+		uc.logger.Errorf("USECASES: error fetching container status for container ID %s: %v", containerID, err)
 		return fmt.Errorf("error fetching container status: %w", err)
 	}
 
 	if len(existing) == 0 {
-		uc.logger.Errorf("USECASES: error fetching container status with IP %s not found", ip)
-		return fmt.Errorf("container status with IP %s not found", ip)
+		uc.logger.Errorf("USECASES: error fetching container status with container ID %s not found", containerID)
+		return fmt.Errorf("container status with container ID %s not found", containerID)
 	}
 
 	status := existing[0]
@@ -115,46 +116,42 @@ func (uc *ContainerStatusUseCase) UpdateContainerStatus(
 
 	err = uc.repo.Update(status)
 	if err != nil {
-		uc.logger.Errorf("USECASES: failed to update container status for IP %s: %v", ip, err)
+		uc.logger.Errorf("USECASES: failed to update container status for container ID %s: %v", containerID, err)
 		return fmt.Errorf("failed to update container status: %w", err)
 	}
 
-	uc.logger.Debugf("Successfully updated container status for IP: %s", ip)
+	uc.logger.Debugf("Successfully updated container status for container ID: %s", containerID)
 
 	return nil
 }
 
-func (uc *ContainerStatusUseCase) DeleteContainerStatusByIP(ip string) error {
-	uc.logger.Debugf("USECASES: deleting container status for IP: %s", ip)
+func (uc *ContainerStatusUseCase) DeleteContainerStatusByContainerID(containerID string) error {
+	uc.logger.Debugf("USECASES: deleting container status for container_id: %s", containerID)
 
-	existing, err := uc.repo.Find(&dto.ContainerStatusFilter{IPAddress: &ip})
+	existing, err := uc.repo.Find(&dto.ContainerStatusFilter{ContainerID: &containerID})
 	if err != nil {
-		uc.logger.Errorf("USECASES: error checking container status for IP %s: %v", ip, err)
+		uc.logger.Errorf("USECASES: error checking container status for container_id %s: %v", containerID, err)
 		return fmt.Errorf("error checking container status: %w", err)
 	}
 
 	if len(existing) == 0 {
-		uc.logger.Warnf(
-			"USECASES: attempted to delete non-existent container status for IP: %s",
-			ip,
-		)
-		return fmt.Errorf("container status with IP %s not found", ip)
+		uc.logger.Warnf("USECASES: attempted to delete non-existent container status for container_id: %s", containerID)
+		return fmt.Errorf("container status with container_id %s not found", containerID)
 	}
 
-	err = uc.repo.DeleteByIP(ip)
+	err = uc.repo.DeleteByContainerID(containerID)
 	if err != nil {
-		uc.logger.Errorf("USECASES: failed to delete container status for IP %s: %v", ip, err)
+		uc.logger.Errorf("USECASES: failed to delete container status for container_id %s: %v", containerID, err)
 		return fmt.Errorf("failed to delete container status: %w", err)
 	}
 
-	uc.logger.Debugf("USECASES: successfully deleted container status for IP: %s", ip)
-
+	uc.logger.Debugf("USECASES: successfully deleted container status for container_id: %s", containerID)
 	return nil
 }
 
 func mapDomainToDTO(status *domain.ContainerStatus) *dto.ContainerStatusDTO {
 	return &dto.ContainerStatusDTO{
-		ID:                 status.ID,
+		ContainerID:        status.ContainerID,
 		Name:               status.Name,
 		IPAddress:          status.IPAddress,
 		Status:             status.Status,

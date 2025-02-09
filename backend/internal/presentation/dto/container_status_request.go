@@ -3,6 +3,7 @@ package dto
 import "time"
 
 type CreateContainerStatusRequest struct {
+	ContainerID        string    `json:"container_id" validate:"required"`
 	IPAddress          string    `json:"ip_address" validate:"required,ip"`
 	Name               string    `json:"name"`
 	Status             string    `json:"status" validate:"required,oneof=created restarting running removing paused exited dead"`

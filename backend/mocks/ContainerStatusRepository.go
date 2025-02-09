@@ -32,17 +32,17 @@ func (_m *ContainerStatusRepository) Create(status *domain.ContainerStatus) erro
 	return r0
 }
 
-// DeleteByIP provides a mock function with given fields: ipAddress
-func (_m *ContainerStatusRepository) DeleteByIP(ipAddress string) error {
-	ret := _m.Called(ipAddress)
+// DeleteByContainerID provides a mock function with given fields: containerID
+func (_m *ContainerStatusRepository) DeleteByContainerID(containerID string) error {
+	ret := _m.Called(containerID)
 
 	if len(ret) == 0 {
-		panic("no return value specified for DeleteByIP")
+		panic("no return value specified for DeleteByContainerID")
 	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(ipAddress)
+		r0 = rf(containerID)
 	} else {
 		r0 = ret.Error(0)
 	}

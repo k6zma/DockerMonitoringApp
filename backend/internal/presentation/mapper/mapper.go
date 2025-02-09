@@ -7,6 +7,7 @@ import (
 
 func MapCreateRequestToAppDTO(req pdto.CreateContainerStatusRequest) adto.ContainerStatusDTO {
 	return adto.ContainerStatusDTO{
+		ContainerID:        req.ContainerID,
 		IPAddress:          req.IPAddress,
 		Name:               req.Name,
 		Status:             req.Status,
@@ -26,7 +27,7 @@ func MapUpdateRequestToAppDTO(req pdto.UpdateContainerStatusRequest) adto.Contai
 
 func MapAppDTOToResponse(appDTO adto.ContainerStatusDTO) pdto.GetContainerStatusResponse {
 	return pdto.GetContainerStatusResponse{
-		ID:                 appDTO.ID,
+		ContainerID:        appDTO.ContainerID,
 		Name:               appDTO.Name,
 		IPAddress:          appDTO.IPAddress,
 		Status:             appDTO.Status,

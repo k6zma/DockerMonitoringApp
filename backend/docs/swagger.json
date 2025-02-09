@@ -8,7 +8,7 @@
             "url": "https://github.com/k6zma",
             "email": "k6zma@yandex.ru"
         },
-        "version": "1.0"
+        "version": "1.2"
     },
     "basePath": "/api/v1",
     "paths": {
@@ -33,14 +33,14 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Filter by IP",
-                        "name": "ip",
+                        "description": "Filter by container ID",
+                        "name": "container_id",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "Filter by ID",
-                        "name": "id",
+                        "type": "string",
+                        "description": "Filter by IP",
+                        "name": "ip",
                         "in": "query"
                     },
                     {
@@ -166,7 +166,7 @@
                 }
             }
         },
-        "/container_status/{ip}": {
+        "/container_status/{container_id}": {
             "delete": {
                 "security": [
                     {
@@ -183,12 +183,12 @@
                 "tags": [
                     "Containers"
                 ],
-                "summary": "Delete container by IP",
+                "summary": "Delete container by container ID",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Container IP address",
-                        "name": "ip",
+                        "description": "Container ID",
+                        "name": "container_id",
                         "in": "path",
                         "required": true
                     }
@@ -217,7 +217,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Partially updates a container by its IP address",
+                "description": "Partially updates a container by its container ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -227,12 +227,12 @@
                 "tags": [
                     "Containers"
                 ],
-                "summary": "Update container by IP",
+                "summary": "Update container by container ID",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Container IP address",
-                        "name": "ip",
+                        "description": "Container ID",
+                        "name": "container_id",
                         "in": "path",
                         "required": true
                     },
@@ -270,11 +270,15 @@
         "dto.CreateContainerStatusRequest": {
             "type": "object",
             "required": [
+                "container_id",
                 "ip_address",
                 "last_successful_ping",
                 "status"
             ],
             "properties": {
+                "container_id": {
+                    "type": "string"
+                },
                 "ip_address": {
                     "type": "string"
                 },
@@ -304,11 +308,11 @@
         "dto.GetContainerStatusResponse": {
             "type": "object",
             "properties": {
-                "created_at": {
+                "container_id": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "integer"
+                "created_at": {
+                    "type": "string"
                 },
                 "ip_address": {
                     "type": "string"

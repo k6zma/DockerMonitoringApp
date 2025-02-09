@@ -40,8 +40,8 @@ func NewContainerStatusHandler(
 // @Tags Containers
 // @Accept json
 // @Produce json
+// @Param container_id query string false "Filter by container ID"
 // @Param ip query string false "Filter by IP"
-// @Param id query int false "Filter by ID"
 // @Param name query string false "Filter by name"
 // @Param status query string false "Filter by status"
 // @Param ping_time_min query number false "Filter by minimum ping time"
@@ -59,27 +59,17 @@ func (h *ContainerStatusHandler) GetFilteredContainerStatuses(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	h.logger.Debugf(
-		"HANDLERS: received GetFilteredContainerStatuses request with query: %s",
-		r.URL.RawQuery,
-	)
+	h.logger.Debugf("HANDLERS: received GetFilteredContainerStatuses request with query: %s", r.URL.RawQuery)
 
 	queryParams := r.URL.Query()
 	filter := adto.ContainerStatusFilter{}
 
-	if ip := queryParams.Get("ip"); ip != "" {
-		filter.IPAddress = &ip
+	if containerID := queryParams.Get("container_id"); containerID != "" {
+		filter.ContainerID = &containerID
 	}
 
-	if idStr := queryParams.Get("id"); idStr != "" {
-		id, err := strconv.ParseInt(idStr, 10, 64)
-		if err == nil {
-			filter.ID = &id
-		} else {
-			h.logger.Errorf("HANDLERS: error parsing id param: %v", err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
+	if ip := queryParams.Get("ip"); ip != "" {
+		filter.IPAddress = &ip
 	}
 
 	if name := queryParams.Get("name"); name != "" {
@@ -178,8 +168,7 @@ func (h *ContainerStatusHandler) GetFilteredContainerStatuses(
 	response := mapper.MapAppDTOsToResponse(statuses)
 
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
+	if err = json.NewEncoder(w).Encode(response); err != nil {
 		h.logger.Errorf("HANDLERS: error encoding response: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -223,15 +212,13 @@ func (h *ContainerStatusHandler) CreateContainerStatus(w http.ResponseWriter, r 
 		return
 	}
 
-	h.logger.Debugf("HANDLERS: container status created with ID: %d", createdStatus.ID)
+	h.logger.Debugf("HANDLERS: container status created with container_id: %s", createdStatus.ContainerID)
 
 	response := mapper.MapAppDTOToResponse(*createdStatus)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		h.logger.Errorf("HANDLERS: error encoding response: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -239,87 +226,80 @@ func (h *ContainerStatusHandler) CreateContainerStatus(w http.ResponseWriter, r 
 }
 
 // UpdateContainerStatus godoc
-// @Summary Update container by IP
-// @Description Partially updates a container by its IP address
+// @Summary Update container by container ID
+// @Description Partially updates a container by its container ID
 // @Tags Containers
 // @Accept json
 // @Produce json
-// @Param ip path string true "Container IP address"
+// @Param container_id path string true "Container ID"
 // @Param request body dto.UpdateContainerStatusRequest true "Fields to update"
 // @Success 204
 // @Failure 400 {string} string "Bad Request"
 // @Failure 500 {string} string "Internal Server Error"
 // @Security ApiKeyAuth
-// @Router /container_status/{ip} [patch].
+// @Router /container_status/{container_id} [patch].
 func (h *ContainerStatusHandler) UpdateContainerStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	ip := vars["ip"]
+	containerID := vars["container_id"]
 
-	h.logger.Debugf("HANDLERS: received UpdateContainerStatus request for IP: %s", ip)
+	h.logger.Debugf("HANDLERS: received UpdateContainerStatus request for container_id: %s", containerID)
 
 	var req pdto.UpdateContainerStatusRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Errorf("HANDLERS: updateContainerStatus decode error for IP %s: %v", ip, err)
+		h.logger.Errorf("HANDLERS: updateContainerStatus decode error for container_id %s: %v", containerID, err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
-
 		return
 	}
 
 	if req.PingTime == 0 && req.LastSuccessfulPing.IsZero() && req.Status == "" {
-		h.logger.Errorf(
-			"HANDLERS: updateContainerStatus validation error for IP %s: No fields provided",
-			ip,
-		)
+		h.logger.Errorf("HANDLERS: updateContainerStatus validation error for container_id %s: No fields provided", containerID)
 		http.Error(w, "At least one field must be provided", http.StatusBadRequest)
-
 		return
 	}
 
 	appDTO := mapper.MapUpdateRequestToAppDTO(req)
 
-	err := h.useCase.UpdateContainerStatus(ip, &appDTO)
+	err := h.useCase.UpdateContainerStatus(containerID, &appDTO)
 	if err != nil {
-		h.logger.Errorf("HANDLERS: failed to update container status for IP %s: %v", ip, err)
+		h.logger.Errorf("HANDLERS: failed to update container status for container_id %s: %v", containerID, err)
 		http.Error(w, "Failed to update container status", http.StatusInternalServerError)
-
 		return
 	}
 
-	h.logger.Debugf("HANDLERS: successfully updated container status for IP: %s", ip)
+	h.logger.Debugf("HANDLERS: successfully updated container status for container_id: %s", containerID)
 	w.WriteHeader(http.StatusNoContent)
 }
 
 // DeleteContainerStatus godoc
-// @Summary Delete container by IP
+// @Summary Delete container by container ID
 // @Description Deletes a container from the database
 // @Tags Containers
 // @Accept json
 // @Produce json
-// @Param ip path string true "Container IP address"
+// @Param container_id path string true "Container ID"
 // @Success 204 "No Content"
 // @Failure 404 {string} string "Not Found"
 // @Failure 500 {string} string "Internal Server Error"
 // @Security ApiKeyAuth
-// @Router /container_status/{ip} [delete].
+// @Router /container_status/{container_id} [delete].
 func (h *ContainerStatusHandler) DeleteContainerStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	ip := vars["ip"]
+	containerID := vars["container_id"]
 
-	h.logger.Debugf("HANDLERS: received DeleteContainerStatus request for IP: %s", ip)
+	h.logger.Debugf("HANDLERS: received DeleteContainerStatus request for container_id: %s", containerID)
 
-	err := h.useCase.DeleteContainerStatusByIP(ip)
+	err := h.useCase.DeleteContainerStatusByContainerID(containerID)
 	if err != nil {
-		if err.Error() == fmt.Sprintf("container status with IP %s not found", ip) {
-			h.logger.Warnf("HANDLERS: container status with IP %s not found", ip)
+		if err.Error() == fmt.Sprintf("container status with container_id %s not found", containerID) {
+			h.logger.Warnf("HANDLERS: container status with container_id %s not found", containerID)
 			http.Error(w, "Container not found", http.StatusNotFound)
 			return
 		}
-
-		h.logger.Errorf("HANDLERS: failed to delete container status for IP %s: %v", ip, err)
+		h.logger.Errorf("HANDLERS: failed to delete container status for container_id %s: %v", containerID, err)
 		http.Error(w, "Failed to delete container status", http.StatusInternalServerError)
 		return
 	}
 
-	h.logger.Debugf("HANDLERS: successfully deleted container status for IP: %s", ip)
+	h.logger.Debugf("HANDLERS: successfully deleted container status for container_id: %s", containerID)
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -42,17 +42,17 @@ func (_m *ContainerStatusUseCaseInterface) CreateContainerStatus(statusDTO *dto.
 	return r0, r1
 }
 
-// DeleteContainerStatusByIP provides a mock function with given fields: ip
-func (_m *ContainerStatusUseCaseInterface) DeleteContainerStatusByIP(ip string) error {
-	ret := _m.Called(ip)
+// DeleteContainerStatusByContainerID provides a mock function with given fields: containerID
+func (_m *ContainerStatusUseCaseInterface) DeleteContainerStatusByContainerID(containerID string) error {
+	ret := _m.Called(containerID)
 
 	if len(ret) == 0 {
-		panic("no return value specified for DeleteContainerStatusByIP")
+		panic("no return value specified for DeleteContainerStatusByContainerID")
 	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(ip)
+		r0 = rf(containerID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -90,9 +90,9 @@ func (_m *ContainerStatusUseCaseInterface) FindContainerStatuses(filter *dto.Con
 	return r0, r1
 }
 
-// UpdateContainerStatus provides a mock function with given fields: ip, statusDTO
-func (_m *ContainerStatusUseCaseInterface) UpdateContainerStatus(ip string, statusDTO *dto.ContainerStatusDTO) error {
-	ret := _m.Called(ip, statusDTO)
+// UpdateContainerStatus provides a mock function with given fields: containerID, statusDTO
+func (_m *ContainerStatusUseCaseInterface) UpdateContainerStatus(containerID string, statusDTO *dto.ContainerStatusDTO) error {
+	ret := _m.Called(containerID, statusDTO)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateContainerStatus")
@@ -100,7 +100,7 @@ func (_m *ContainerStatusUseCaseInterface) UpdateContainerStatus(ip string, stat
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string, *dto.ContainerStatusDTO) error); ok {
-		r0 = rf(ip, statusDTO)
+		r0 = rf(containerID, statusDTO)
 	} else {
 		r0 = ret.Error(0)
 	}

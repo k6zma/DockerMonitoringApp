@@ -3,14 +3,14 @@
       "port": 8080
     },
     "db": {
-      "host": "localhost",
+      "host": "postgres_db",
       "port": 5432,
       "user": "user",
       "password": "password",
       "database_name": "database"
     },
     "migrations": {
-      "path": "migrations",
+      "path": "/app/migrations",
       "type": "apply"
     },
     "auth_api": {
