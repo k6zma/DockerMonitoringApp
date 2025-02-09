@@ -21,6 +21,7 @@ func InitRoutes(
 	router := mux.NewRouter()
 
 	router.Use(middlewares.LoggingMiddleware(logger))
+	router.Use(middlewares.CorsMiddleware)
 
 	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
@@ -32,12 +33,13 @@ func InitRoutes(
 	apiRouter.Use(middlewares.AuthMiddleware(cfg, logger))
 
 	apiRouter.HandleFunc("/container_status", conHandler.GetFilteredContainerStatuses).
-		Methods("GET")
-	apiRouter.HandleFunc("/container_status", conHandler.CreateContainerStatus).Methods("POST")
+		Methods(http.MethodGet, http.MethodOptions)
+	apiRouter.HandleFunc("/container_status", conHandler.CreateContainerStatus).
+		Methods(http.MethodPost, http.MethodOptions)
 	apiRouter.HandleFunc("/container_status/{ip}", conHandler.UpdateContainerStatus).
-		Methods("PATCH")
+		Methods(http.MethodPatch, http.MethodOptions)
 	apiRouter.HandleFunc("/container_status/{ip}", conHandler.DeleteContainerStatus).
-		Methods("DELETE")
+		Methods(http.MethodDelete, http.MethodOptions)
 
 	return router
 }
