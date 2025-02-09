@@ -47,16 +47,15 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_BACKEND_API_URL: "/api/v1"
+        NEXT_PUBLIC_BACKEND_AUTH_API_KEY: "your-api-key"
     container_name: frontend_service
     depends_on:
       - backend
     networks:
       - app-network
     restart: unless-stopped
-    environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=/api/v1
-      - NEXT_PUBLIC_API_KEY=your-api-key
 
   nginx:
     image: nginx:alpine
