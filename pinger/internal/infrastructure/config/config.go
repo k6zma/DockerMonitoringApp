@@ -9,9 +9,9 @@ import (
 )
 
 type Config struct {
-	PingInterval time.Duration `mapstructure:"ping_interval" validate:"required"`
-	Docker       DockerConfig  `mapstructure:"docker"        validate:"required"`
-	Backend      BackendConfig `mapstructure:"backend"       validate:"required"`
+	Ping    *PingConfig    `mapstructure:"ping" validate:"required"`
+	Docker  *DockerConfig  `mapstructure:"docker"        validate:"required"`
+	Backend *BackendConfig `mapstructure:"backend"       validate:"required"`
 }
 
 type BackendConfig struct {
@@ -20,7 +20,7 @@ type BackendConfig struct {
 }
 
 type PingConfig struct {
-	PingInterval time.Duration `mapstructure:"ping_interval" validate:"required"`
+	PingInterval time.Duration `mapstructure:"ping_interval" validate:"required,gt=4s"`
 }
 
 type DockerConfig struct {

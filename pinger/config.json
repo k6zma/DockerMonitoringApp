@@ -1,5 +1,7 @@
 {
-    "ping_interval": "1s",
+    "ping": {
+      "ping_interval": "5s"
+    },
     "docker": {
         "socket_path": "/var/run/docker.sock"
     },

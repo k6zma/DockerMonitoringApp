@@ -34,23 +34,31 @@ func NewDockerContainerRepo(
 }
 
 func (r *DockerContainerRepo) GetContainers(ctx context.Context) ([]domain.ContainerInfo, error) {
-	containers, err := r.client.ContainerList(ctx, container.ListOptions{})
+	r.logger.Debug("Getting containers list")
+	containers, err := r.client.ContainerList(ctx, container.ListOptions{
+		All: true,
+	})
 	if err != nil {
+		r.logger.Errorf("Container list failed: %v", err)
 		return nil, fmt.Errorf("container list failed: %w", err)
 	}
 
+	for i := range containers {
+		r.logger.Debugf("Found container: %s with IP: %s", containers[i].Names[0], containers[i].NetworkSettings.Networks)
+	}
+
 	containerList := make([]domain.ContainerInfo, 0, len(containers))
-	for _, c := range containers {
+	for i := range containers {
 		var ip string
-		for _, n := range c.NetworkSettings.Networks {
+		for _, n := range containers[i].NetworkSettings.Networks {
 			ip = n.IPAddress
 			break
 		}
 
 		containerList = append(containerList, domain.ContainerInfo{
 			IP:     ip,
-			Name:   c.Names[0],
-			Status: c.State,
+			Name:   containers[i].Names[0],
+			Status: containers[i].State,
 		})
 	}
 
