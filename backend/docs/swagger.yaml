@@ -2,6 +2,8 @@ basePath: /api/v1
 definitions:
   dto.CreateContainerStatusRequest:
     properties:
+      container_id:
+        type: string
       ip_address:
         type: string
       last_successful_ping:
@@ -21,16 +23,17 @@ definitions:
         - dead
         type: string
     required:
+    - container_id
     - ip_address
     - last_successful_ping
     - status
     type: object
   dto.GetContainerStatusResponse:
     properties:
+      container_id:
+        type: string
       created_at:
         type: string
-      id:
-        type: integer
       ip_address:
         type: string
       last_successful_ping:
@@ -70,7 +73,7 @@ info:
     url: https://github.com/k6zma
   description: REST API for monitoring Docker containers.
   title: Docker Monitoring API
-  version: "1.0"
+  version: "1.2"
 paths:
   /container_status:
     get:
@@ -79,14 +82,14 @@ paths:
       description: Returns a list of containers with optional filtering by various
         parameters
       parameters:
+      - description: Filter by container ID
+        in: query
+        name: container_id
+        type: string
       - description: Filter by IP
         in: query
         name: ip
         type: string
-      - description: Filter by ID
-        in: query
-        name: id
-        type: integer
       - description: Filter by name
         in: query
         name: name
@@ -175,15 +178,15 @@ paths:
       summary: Create a new container
       tags:
       - Containers
-  /container_status/{ip}:
+  /container_status/{container_id}:
     delete:
       consumes:
       - application/json
       description: Deletes a container from the database
       parameters:
-      - description: Container IP address
+      - description: Container ID
         in: path
-        name: ip
+        name: container_id
         required: true
         type: string
       produces:
@@ -201,17 +204,17 @@ paths:
             type: string
       security:
       - ApiKeyAuth: []
-      summary: Delete container by IP
+      summary: Delete container by container ID
       tags:
       - Containers
     patch:
       consumes:
       - application/json
-      description: Partially updates a container by its IP address
+      description: Partially updates a container by its container ID
       parameters:
-      - description: Container IP address
+      - description: Container ID
         in: path
-        name: ip
+        name: container_id
         required: true
         type: string
       - description: Fields to update
@@ -235,7 +238,7 @@ paths:
             type: string
       security:
       - ApiKeyAuth: []
-      summary: Update container by IP
+      summary: Update container by container ID
       tags:
       - Containers
 securityDefinitions:

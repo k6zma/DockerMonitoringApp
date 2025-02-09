@@ -16,9 +16,10 @@ import (
 
 const (
 	testContainerID     = 1
+	testContainerIDStr  = "container1234567890abcdef"
 	testContainerIP     = "192.168.1.101"
-	testPingTimeDefault = 10
-	testPingTimeUpdated = 20
+	testPingTimeDefault = 10.0
+	testPingTimeUpdated = 20.0
 )
 
 func TestFindContainerStatuses_Success(t *testing.T) {
@@ -27,9 +28,17 @@ func TestFindContainerStatuses_Success(t *testing.T) {
 
 	useCase := usecases.NewContainerStatusUseCase(mockRepo, mockLogger)
 
-	mockFilter := &dto.ContainerStatusFilter{}
+	mockFilter := &dto.ContainerStatusFilter{
+		ContainerID: new(string),
+	}
+	*mockFilter.ContainerID = testContainerIDStr
+
 	mockResult := []*domain.ContainerStatus{
-		{ID: testContainerID, IPAddress: testContainerIP, PingTime: testPingTimeDefault},
+		{
+			ContainerID: testContainerIDStr,
+			IPAddress:   testContainerIP,
+			PingTime:    testPingTimeDefault,
+		},
 	}
 
 	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
@@ -40,6 +49,7 @@ func TestFindContainerStatuses_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
 	assert.Equal(t, testContainerIP, result[0].IPAddress)
+	assert.Equal(t, testContainerIDStr, result[0].ContainerID)
 
 	mockRepo.AssertExpectations(t)
 	mockLogger.AssertExpectations(t)
@@ -73,8 +83,9 @@ func TestCreateContainerStatus_Success(t *testing.T) {
 	useCase := usecases.NewContainerStatusUseCase(mockRepo, mockLogger)
 
 	mockDTO := &dto.ContainerStatusDTO{
-		IPAddress: testContainerIP,
-		PingTime:  testPingTimeDefault,
+		ContainerID: testContainerIDStr,
+		IPAddress:   testContainerIP,
+		PingTime:    testPingTimeDefault,
 	}
 
 	mockLogger.On("Debugf", mock.Anything, mock.Anything, mock.Anything).Return()
@@ -85,6 +96,7 @@ func TestCreateContainerStatus_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, testContainerIP, result.IPAddress)
+	assert.Equal(t, testContainerIDStr, result.ContainerID)
 
 	mockRepo.AssertExpectations(t)
 	mockLogger.AssertExpectations(t)
@@ -97,8 +109,9 @@ func TestCreateContainerStatus_Error(t *testing.T) {
 	useCase := usecases.NewContainerStatusUseCase(mockRepo, mockLogger)
 
 	mockDTO := &dto.ContainerStatusDTO{
-		IPAddress: testContainerIP,
-		PingTime:  testPingTimeDefault,
+		ContainerID: testContainerIDStr,
+		IPAddress:   testContainerIP,
+		PingTime:    testPingTimeDefault,
 	}
 
 	mockLogger.On("Debugf", mock.Anything, mock.Anything, mock.Anything).Return()
@@ -120,20 +133,24 @@ func TestUpdateContainerStatus_Success(t *testing.T) {
 
 	useCase := usecases.NewContainerStatusUseCase(mockRepo, mockLogger)
 
-	mockIP := testContainerIP
+	mockContainerID := testContainerIDStr
 	mockDTO := &dto.ContainerStatusDTO{
 		PingTime:           testPingTimeUpdated,
 		LastSuccessfulPing: time.Now(),
 	}
 	existingStatus := []*domain.ContainerStatus{
-		{ID: testContainerID, IPAddress: mockIP, PingTime: testPingTimeDefault},
+		{
+			ContainerID: mockContainerID,
+			IPAddress:   testContainerIP,
+			PingTime:    testPingTimeDefault,
+		},
 	}
 
 	mockLogger.On("Debugf", mock.Anything, mock.Anything, mock.Anything).Return()
-	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).Return(existingStatus, nil)
+	mockRepo.On("Find", &dto.ContainerStatusFilter{ContainerID: &mockContainerID}).Return(existingStatus, nil)
 	mockRepo.On("Update", mock.Anything).Return(nil)
 
-	err := useCase.UpdateContainerStatus(mockIP, mockDTO)
+	err := useCase.UpdateContainerStatus(mockContainerID, mockDTO)
 
 	assert.NoError(t, err)
 
@@ -147,108 +164,17 @@ func TestUpdateContainerStatus_ErrorFetching(t *testing.T) {
 
 	useCase := usecases.NewContainerStatusUseCase(mockRepo, mockLogger)
 
-	mockIP := testContainerIP
+	mockContainerID := testContainerIDStr
 	mockDTO := &dto.ContainerStatusDTO{PingTime: testPingTimeUpdated}
 
 	mockLogger.On("Debugf", mock.Anything, mock.Anything, mock.Anything).Return()
-	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).
+	mockRepo.On("Find", &dto.ContainerStatusFilter{ContainerID: &mockContainerID}).
 		Return(nil, fmt.Errorf("database error"))
 	mockLogger.On("Errorf", mock.Anything, mock.Anything, mock.Anything).Return()
 
-	err := useCase.UpdateContainerStatus(mockIP, mockDTO)
+	err := useCase.UpdateContainerStatus(mockContainerID, mockDTO)
 
 	assert.Error(t, err)
-
-	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
-}
-
-func TestDeleteContainerStatusByIP_ErrorFetching(t *testing.T) {
-	mockRepo := new(mocks.ContainerStatusRepository)
-	mockLogger := new(mocks.LoggerInterface)
-
-	useCase := usecases.NewContainerStatusUseCase(mockRepo, mockLogger)
-
-	mockIP := testContainerIP
-
-	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
-	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).
-		Return(nil, fmt.Errorf("database error"))
-	mockLogger.On("Errorf", mock.Anything, mock.Anything, mock.Anything).Return()
-
-	err := useCase.DeleteContainerStatusByIP(mockIP)
-
-	assert.Error(t, err)
-
-	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
-}
-
-func TestDeleteContainerStatusByIP_NotFound(t *testing.T) {
-	mockRepo := new(mocks.ContainerStatusRepository)
-	mockLogger := new(mocks.LoggerInterface)
-
-	useCase := usecases.NewContainerStatusUseCase(mockRepo, mockLogger)
-
-	mockIP := testContainerIP
-
-	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
-	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).
-		Return([]*domain.ContainerStatus{}, nil)
-	mockLogger.On("Warnf", mock.Anything, mock.Anything, mock.Anything).Return()
-
-	err := useCase.DeleteContainerStatusByIP(mockIP)
-
-	assert.Error(t, err)
-
-	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
-}
-
-func TestDeleteContainerStatusByIP_ErrorDeleting(t *testing.T) {
-	mockRepo := new(mocks.ContainerStatusRepository)
-	mockLogger := new(mocks.LoggerInterface)
-
-	useCase := usecases.NewContainerStatusUseCase(mockRepo, mockLogger)
-
-	mockIP := testContainerIP
-	existingStatus := []*domain.ContainerStatus{
-		{ID: testContainerID, IPAddress: testContainerIP, PingTime: testPingTimeDefault},
-	}
-
-	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
-	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).Return(existingStatus, nil)
-	mockRepo.On("DeleteByIP", mockIP).Return(fmt.Errorf("delete failed"))
-	mockLogger.On("Errorf", mock.Anything, mock.Anything, mock.Anything).Return()
-
-	err := useCase.DeleteContainerStatusByIP(mockIP)
-
-	assert.Error(t, err)
-
-	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
-}
-
-func TestDeleteContainerStatusByIP_Success(t *testing.T) {
-	mockRepo := new(mocks.ContainerStatusRepository)
-	mockLogger := new(mocks.LoggerInterface)
-
-	useCase := usecases.NewContainerStatusUseCase(mockRepo, mockLogger)
-
-	mockIP := testContainerIP
-	existingStatus := []*domain.ContainerStatus{
-		{ID: testContainerID, IPAddress: testContainerIP, PingTime: testPingTimeDefault},
-	}
-
-	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
-	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).Return(existingStatus, nil)
-	mockRepo.On("DeleteByIP", mockIP).Return(nil)
-	mockLogger.On("Debugf", "USECASES: successfully deleted container status for IP: %s", mockIP).
-		Return()
-
-	err := useCase.DeleteContainerStatusByIP(mockIP)
-
-	assert.NoError(t, err)
 
 	mockRepo.AssertExpectations(t)
 	mockLogger.AssertExpectations(t)
@@ -260,20 +186,20 @@ func TestUpdateContainerStatus_NotFound(t *testing.T) {
 
 	useCase := usecases.NewContainerStatusUseCase(mockRepo, mockLogger)
 
-	mockIP := testContainerIP
+	mockContainerID := testContainerIDStr
 	mockDTO := &dto.ContainerStatusDTO{PingTime: testPingTimeUpdated}
 
-	mockLogger.On("Debugf", "USECASES: updating container status for IP: %s with data: %+v", mockIP, mock.Anything).
+	mockLogger.On("Debugf", "USECASES: updating container status for container ID: %s with data: %+v", mockContainerID, mock.Anything).
 		Return()
-	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).
+	mockRepo.On("Find", &dto.ContainerStatusFilter{ContainerID: &mockContainerID}).
 		Return([]*domain.ContainerStatus{}, nil)
-	mockLogger.On("Errorf", "USECASES: error fetching container status with IP %s not found", mockIP).
+	mockLogger.On("Errorf", "USECASES: error fetching container status with container ID %s not found", mockContainerID).
 		Return()
 
-	err := useCase.UpdateContainerStatus(mockIP, mockDTO)
+	err := useCase.UpdateContainerStatus(mockContainerID, mockDTO)
 
 	assert.Error(t, err)
-	assert.Equal(t, fmt.Errorf("container status with IP %s not found", mockIP), err)
+	assert.Equal(t, fmt.Errorf("container status with container ID %s not found", mockContainerID), err)
 
 	mockRepo.AssertExpectations(t)
 	mockLogger.AssertExpectations(t)
@@ -285,23 +211,126 @@ func TestUpdateContainerStatus_UpdateError(t *testing.T) {
 
 	useCase := usecases.NewContainerStatusUseCase(mockRepo, mockLogger)
 
-	mockIP := testContainerIP
+	mockContainerID := testContainerIDStr
 	mockDTO := &dto.ContainerStatusDTO{PingTime: testPingTimeUpdated}
 	existingStatus := []*domain.ContainerStatus{
-		{ID: testContainerID, IPAddress: mockIP, PingTime: testPingTimeDefault},
+		{
+			ContainerID: mockContainerID,
+			IPAddress:   testContainerIP,
+			PingTime:    testPingTimeDefault,
+		},
 	}
 
-	mockLogger.On("Debugf", "USECASES: updating container status for IP: %s with data: %+v", mockIP, mock.Anything).
+	mockLogger.On("Debugf", "USECASES: updating container status for container ID: %s with data: %+v", mockContainerID, mock.Anything).
 		Return()
-	mockRepo.On("Find", &dto.ContainerStatusFilter{IPAddress: &mockIP}).Return(existingStatus, nil)
+	mockRepo.On("Find", &dto.ContainerStatusFilter{ContainerID: &mockContainerID}).Return(existingStatus, nil)
 	mockRepo.On("Update", mock.Anything).Return(fmt.Errorf("update failed"))
-	mockLogger.On("Errorf", "USECASES: failed to update container status for IP %s: %v", mockIP, mock.Anything).
+	mockLogger.On("Errorf", "USECASES: failed to update container status for container ID %s: %v", mockContainerID, mock.Anything).
 		Return()
 
-	err := useCase.UpdateContainerStatus(mockIP, mockDTO)
+	err := useCase.UpdateContainerStatus(mockContainerID, mockDTO)
 
 	assert.Error(t, err)
 	assert.ErrorContains(t, err, "failed to update container status: update failed")
+
+	mockRepo.AssertExpectations(t)
+	mockLogger.AssertExpectations(t)
+}
+
+func TestDeleteContainerStatusByContainerID_ErrorFetching(t *testing.T) {
+	mockRepo := new(mocks.ContainerStatusRepository)
+	mockLogger := new(mocks.LoggerInterface)
+
+	useCase := usecases.NewContainerStatusUseCase(mockRepo, mockLogger)
+
+	mockContainerID := testContainerIDStr
+
+	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
+	mockRepo.On("Find", &dto.ContainerStatusFilter{ContainerID: &mockContainerID}).
+		Return(nil, fmt.Errorf("database error"))
+	mockLogger.On("Errorf", mock.Anything, mock.Anything, mock.Anything).Return()
+
+	err := useCase.DeleteContainerStatusByContainerID(mockContainerID)
+
+	assert.Error(t, err)
+
+	mockRepo.AssertExpectations(t)
+	mockLogger.AssertExpectations(t)
+}
+
+func TestDeleteContainerStatusByContainerID_NotFound(t *testing.T) {
+	mockRepo := new(mocks.ContainerStatusRepository)
+	mockLogger := new(mocks.LoggerInterface)
+
+	useCase := usecases.NewContainerStatusUseCase(mockRepo, mockLogger)
+
+	mockContainerID := testContainerIDStr
+
+	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
+	mockRepo.On("Find", &dto.ContainerStatusFilter{ContainerID: &mockContainerID}).
+		Return([]*domain.ContainerStatus{}, nil)
+	mockLogger.On("Warnf", mock.Anything, mock.Anything, mock.Anything).Return()
+
+	err := useCase.DeleteContainerStatusByContainerID(mockContainerID)
+
+	assert.Error(t, err)
+
+	mockRepo.AssertExpectations(t)
+	mockLogger.AssertExpectations(t)
+}
+
+func TestDeleteContainerStatusByContainerID_ErrorDeleting(t *testing.T) {
+	mockRepo := new(mocks.ContainerStatusRepository)
+	mockLogger := new(mocks.LoggerInterface)
+
+	useCase := usecases.NewContainerStatusUseCase(mockRepo, mockLogger)
+
+	mockContainerID := testContainerIDStr
+	existingStatus := []*domain.ContainerStatus{
+		{
+			ContainerID: testContainerIDStr,
+			IPAddress:   testContainerIP,
+			PingTime:    testPingTimeDefault,
+		},
+	}
+
+	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
+	mockRepo.On("Find", &dto.ContainerStatusFilter{ContainerID: &mockContainerID}).Return(existingStatus, nil)
+	mockRepo.On("DeleteByContainerID", mockContainerID).Return(fmt.Errorf("delete failed"))
+	mockLogger.On("Errorf", mock.Anything, mock.Anything, mock.Anything).Return()
+
+	err := useCase.DeleteContainerStatusByContainerID(mockContainerID)
+
+	assert.Error(t, err)
+
+	mockRepo.AssertExpectations(t)
+	mockLogger.AssertExpectations(t)
+}
+
+func TestDeleteContainerStatusByContainerID_Success(t *testing.T) {
+	mockRepo := new(mocks.ContainerStatusRepository)
+	mockLogger := new(mocks.LoggerInterface)
+
+	useCase := usecases.NewContainerStatusUseCase(mockRepo, mockLogger)
+
+	mockContainerID := testContainerIDStr
+	existingStatus := []*domain.ContainerStatus{
+		{
+			ContainerID: testContainerIDStr,
+			IPAddress:   testContainerIP,
+			PingTime:    testPingTimeDefault,
+		},
+	}
+
+	mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
+	mockRepo.On("Find", &dto.ContainerStatusFilter{ContainerID: &mockContainerID}).Return(existingStatus, nil)
+	mockRepo.On("DeleteByContainerID", mockContainerID).Return(nil)
+	mockLogger.On("Debugf", "USECASES: successfully deleted container status for container_id: %s", mockContainerID).
+		Return()
+
+	err := useCase.DeleteContainerStatusByContainerID(mockContainerID)
+
+	assert.NoError(t, err)
 
 	mockRepo.AssertExpectations(t)
 	mockLogger.AssertExpectations(t)

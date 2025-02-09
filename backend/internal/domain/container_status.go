@@ -3,7 +3,7 @@ package domain
 import "time"
 
 type ContainerStatus struct {
-	ID                 int64     `db:"id"`
+	ContainerID        string    `db:"container_id"`
 	Name               string    `db:"name"`
 	IPAddress          string    `db:"ip_address"`
 	Status             string    `db:"status"`

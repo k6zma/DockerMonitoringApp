@@ -40,14 +40,14 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Filter by IP",
-                        "name": "ip",
+                        "description": "Filter by container ID",
+                        "name": "container_id",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "Filter by ID",
-                        "name": "id",
+                        "type": "string",
+                        "description": "Filter by IP",
+                        "name": "ip",
                         "in": "query"
                     },
                     {
@@ -173,7 +173,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/container_status/{ip}": {
+        "/container_status/{container_id}": {
             "delete": {
                 "security": [
                     {
@@ -190,12 +190,12 @@ const docTemplate = `{
                 "tags": [
                     "Containers"
                 ],
-                "summary": "Delete container by IP",
+                "summary": "Delete container by container ID",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Container IP address",
-                        "name": "ip",
+                        "description": "Container ID",
+                        "name": "container_id",
                         "in": "path",
                         "required": true
                     }
@@ -224,7 +224,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Partially updates a container by its IP address",
+                "description": "Partially updates a container by its container ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -234,12 +234,12 @@ const docTemplate = `{
                 "tags": [
                     "Containers"
                 ],
-                "summary": "Update container by IP",
+                "summary": "Update container by container ID",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Container IP address",
-                        "name": "ip",
+                        "description": "Container ID",
+                        "name": "container_id",
                         "in": "path",
                         "required": true
                     },
@@ -277,11 +277,15 @@ const docTemplate = `{
         "dto.CreateContainerStatusRequest": {
             "type": "object",
             "required": [
+                "container_id",
                 "ip_address",
                 "last_successful_ping",
                 "status"
             ],
             "properties": {
+                "container_id": {
+                    "type": "string"
+                },
                 "ip_address": {
                     "type": "string"
                 },
@@ -311,11 +315,11 @@ const docTemplate = `{
         "dto.GetContainerStatusResponse": {
             "type": "object",
             "properties": {
-                "created_at": {
+                "container_id": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "integer"
+                "created_at": {
+                    "type": "string"
                 },
                 "ip_address": {
                     "type": "string"
@@ -375,7 +379,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "1.2",
 	Host:             "",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},

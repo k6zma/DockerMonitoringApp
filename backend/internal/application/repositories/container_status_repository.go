@@ -9,5 +9,5 @@ type ContainerStatusRepository interface {
 	Find(filter *dto.ContainerStatusFilter) ([]*domain.ContainerStatus, error)
 	Create(status *domain.ContainerStatus) error
 	Update(status *domain.ContainerStatus) error
-	DeleteByIP(ipAddress string) error
+	DeleteByContainerID(containerID string) error
 }

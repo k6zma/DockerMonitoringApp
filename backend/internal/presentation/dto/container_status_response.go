@@ -3,7 +3,7 @@ package dto
 import "time"
 
 type GetContainerStatusResponse struct {
-	ID                 int64     `json:"id"`
+	ContainerID        string    `json:"container_id"`
 	Name               string    `json:"name"`
 	IPAddress          string    `json:"ip_address"`
 	Status             string    `json:"status"`

@@ -36,9 +36,9 @@ func InitRoutes(
 		Methods(http.MethodGet, http.MethodOptions)
 	apiRouter.HandleFunc("/container_status", conHandler.CreateContainerStatus).
 		Methods(http.MethodPost, http.MethodOptions)
-	apiRouter.HandleFunc("/container_status/{ip}", conHandler.UpdateContainerStatus).
+	apiRouter.HandleFunc("/container_status/{container_id}", conHandler.UpdateContainerStatus).
 		Methods(http.MethodPatch, http.MethodOptions)
-	apiRouter.HandleFunc("/container_status/{ip}", conHandler.DeleteContainerStatus).
+	apiRouter.HandleFunc("/container_status/{container_id}", conHandler.DeleteContainerStatus).
 		Methods(http.MethodDelete, http.MethodOptions)
 
 	return router

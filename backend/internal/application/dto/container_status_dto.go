@@ -3,7 +3,7 @@ package dto
 import "time"
 
 type ContainerStatusDTO struct {
-	ID                 int64
+	ContainerID        string
 	Name               string
 	IPAddress          string
 	Status             string
@@ -14,8 +14,8 @@ type ContainerStatusDTO struct {
 }
 
 type ContainerStatusFilter struct {
+	ContainerID  *string
 	IPAddress    *string
-	ID           *int64
 	Name         *string
 	Status       *string
 	PingTimeMin  *float64
