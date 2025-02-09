@@ -1,0 +1,19 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install --frozen-lockfile
+
+ARG NEXT_PUBLIC_BACKEND_API_URL
+ARG NEXT_PUBLIC_BACKEND_AUTH_API_KEY
+
+ENV NEXT_PUBLIC_BACKEND_API_URL=$NEXT_PUBLIC_BACKEND_API_URL
+ENV NEXT_PUBLIC_BACKEND_AUTH_API_KEY=$NEXT_PUBLIC_BACKEND_AUTH_API_KEY
+
+COPY . .
+
+RUN npm run build
+
+CMD ["npm", "run", "start"]
