@@ -30,6 +30,8 @@
 ---
 
 ## **Starting the Project**
+Before starting the application, create a .env file in the project root. You can use the provided .env.example as a reference for the required environment variables
+
 The project is deployed using **Docker Compose**. All services are containerized and can be started with a single command:
 
 ```bash
