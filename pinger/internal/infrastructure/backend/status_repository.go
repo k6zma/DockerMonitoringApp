@@ -32,15 +32,18 @@ func NewBackendStatusRepo(
 	}
 }
 
-func (r *BackendStatusRepo) UpdateStatus(ctx context.Context, ip string, pingTime int64, name, status string) error {
-	url := fmt.Sprintf("%s/api/v1/container_status/%s", r.baseURL, ip)
+func (r *BackendStatusRepo) UpdateStatus(ctx context.Context, containerID string, pingTime int64, name, status string, success bool) error {
+	url := fmt.Sprintf("%s/api/v1/container_status/%s", r.baseURL, containerID)
 	r.logger.Debugf("Sending PATCH request to %s with data: name=%s, status=%s, ping_time=%d", url, name, status, pingTime)
 
 	payload := map[string]interface{}{
-		"ping_time":            pingTime,
-		"last_successful_ping": time.Now().Format(time.RFC3339),
-		"name":                 name,
-		"status":               status,
+		"ping_time": pingTime,
+		"name":      name,
+		"status":    status,
+	}
+
+	if success {
+		payload["last_successful_ping"] = time.Now().Format(time.RFC3339)
 	}
 
 	jsonBody, err := json.Marshal(payload)
@@ -69,16 +72,16 @@ func (r *BackendStatusRepo) UpdateStatus(ctx context.Context, ip string, pingTim
 		return fmt.Errorf("api returned error status: %s", resp.Status)
 	}
 
-	r.logger.Debugf("Successfully updated status for %s", ip)
-
+	r.logger.Debugf("Successfully updated status for container ID %s", containerID)
 	return nil
 }
 
-func (r *BackendStatusRepo) CreateStatus(ctx context.Context, ip string, pingTime int64, name, status string) error {
+func (r *BackendStatusRepo) CreateStatus(ctx context.Context, containerID, ip string, pingTime int64, name, status string) error {
 	url := fmt.Sprintf("%s/api/v1/container_status", r.baseURL)
-	r.logger.Debugf("Sending POST request to %s with data: name=%s, status=%s, ping_time=%d", url, name, status, pingTime)
+	r.logger.Debugf("Sending POST request to %s with data: container_id=%s, name=%s, status=%s, ping_time=%d", url, containerID, name, status, pingTime)
 
 	payload := map[string]interface{}{
+		"container_id":         containerID,
 		"ip_address":           ip,
 		"ping_time":            pingTime,
 		"last_successful_ping": time.Now().Format(time.RFC3339),
@@ -111,8 +114,7 @@ func (r *BackendStatusRepo) CreateStatus(ctx context.Context, ip string, pingTim
 		return fmt.Errorf("api returned error status: %s", resp.Status)
 	}
 
-	r.logger.Infof("Successfully created status for %s", ip)
-
+	r.logger.Infof("Successfully created status for container ID %s", containerID)
 	return nil
 }
 
@@ -148,12 +150,11 @@ func (r *BackendStatusRepo) GetStatuses(ctx context.Context) ([]domain.PingResul
 
 	r.logger.Debugf("Received response: %+v", resp)
 	r.logger.Debugf("Received statuses: %+v", statuses)
-
 	return statuses, nil
 }
 
-func (r *BackendStatusRepo) DeleteStatus(ctx context.Context, ip string) error {
-	url := fmt.Sprintf("%s/api/v1/container_status/%s", r.baseURL, ip)
+func (r *BackendStatusRepo) DeleteStatus(ctx context.Context, containerID string) error {
+	url := fmt.Sprintf("%s/api/v1/container_status/%s", r.baseURL, containerID)
 	req, err := http.NewRequestWithContext(ctx, "DELETE", url, http.NoBody)
 	if err != nil {
 		r.logger.Errorf("Request creation failed: %v", err)
@@ -174,6 +175,6 @@ func (r *BackendStatusRepo) DeleteStatus(ctx context.Context, ip string) error {
 		return fmt.Errorf("api returned error status: %s", resp.Status)
 	}
 
-	r.logger.Debugf("Successfully deleted status for %s", ip)
+	r.logger.Debugf("Successfully deleted status for container ID %s", containerID)
 	return nil
 }
