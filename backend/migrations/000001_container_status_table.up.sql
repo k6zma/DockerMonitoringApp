@@ -1,7 +1,7 @@
 CREATE TABLE container_status (
-    id BIGSERIAL PRIMARY KEY,
+    container_id TEXT PRIMARY KEY,
     name VARCHAR(255) NOT NULL DEFAULT '',
-    ip_address INET NOT NULL UNIQUE,
+    ip_address INET NOT NULL,
     status VARCHAR(255) NOT NULL DEFAULT 'created',
     ping_time DOUBLE PRECISION NULL,
     last_successful_ping TIMESTAMP,
